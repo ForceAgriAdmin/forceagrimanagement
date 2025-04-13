@@ -1,0 +1,44 @@
+.menu-item-card {
+    cursor: pointer;
+    width: 9rem;                // Adjust width
+    height: 9rem;               // Adjust height
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;         // Slightly rounded corners
+    background-color: var(--mat-sys-background);     // White card background
+    color: #424242;             // Text/icon color
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05); // Subtle default shadow
+    transition: box-shadow 0.3s ease, transform 0.2s ease;
+    margin: 1rem;               // Spacing between cards
+  
+    &:hover {
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15); 
+      transform: translateY(-3px); // Slight “lift” on hover
+    }
+  }
+  
+  .icon-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background-color: #e8f5e9;   // Light green background (Material “Green 50” approx)
+  
+    mat-icon {
+      font-size: 1.5rem;
+      color: var(--mat-sys-primary);           // Material “Green 500” (can adjust to match your theme)
+    }
+  }
+  
+  .card-label {
+    font-size: 1rem;
+    font-weight: 600;
+    text-align: center;
+    color: inherit;             // Use the parent color (#424242)
+  }
+  
