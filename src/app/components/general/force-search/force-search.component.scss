@@ -1,0 +1,24 @@
+:host {
+    display: inline-block;
+    width: 100%;
+    max-width: 600px;
+  }
+  
+  .force-search-field {
+    width: 100%;
+  }
+  
+  .mat-form-field-appearance-outline .mat-form-field-flex {
+    height: 56px; 
+    align-items: center;
+    box-sizing: border-box;
+    background-color: #f9f9f9; 
+  }
+  
+  .mat-form-field-appearance-outline
+    .mat-form-field-outline
+    .mat-form-field-outline-thick {
+    border-width: 1px !important;
+    border-color: #ccc !important;
+  }
+  

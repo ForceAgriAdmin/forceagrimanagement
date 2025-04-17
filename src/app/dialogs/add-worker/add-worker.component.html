@@ -1,0 +1,52 @@
+<h2 mat-dialog-title>Add Worker</h2>
+<mat-dialog-content>
+  <!-- Wrap form controls inside a form with the workerForm FormGroup -->
+  <form [formGroup]="workerForm">
+    <div class="dialog-form-row">
+      <!-- Left Column -->
+      <div class="dialog-column">
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>First Name</mat-label>
+          <input matInput formControlName="firstName" required />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Last Name</mat-label>
+          <input matInput formControlName="lastName" required />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>ID Number</mat-label>
+          <input matInput formControlName="idNumber" required />
+        </mat-form-field>
+      </div>
+
+      <!-- Right Column -->
+      <div class="dialog-column">
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Employee Number</mat-label>
+          <input matInput formControlName="employeeNumber" required />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Operation</mat-label>
+          <mat-select formControlName="operationId" required>
+            <mat-option *ngFor="let op of operations" [value]="op.id">
+              {{ op.name }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- File Input: Not wrapped in a mat-form-field to avoid control errors -->
+        <div class="file-input-container">
+          <label for="profileImageInput">Profile Image</label>
+          <input id="profileImageInput" type="file" (change)="onFileSelected($event)" accept="image/*" />
+        </div>
+      </div>
+    </div>
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions [align]="end">
+  <button mat-button (click)="onCancel()">Cancel</button>
+  <button mat-button color="primary" (click)="onSubmit()" [disabled]="workerForm.invalid">Add</button>
+</mat-dialog-actions>

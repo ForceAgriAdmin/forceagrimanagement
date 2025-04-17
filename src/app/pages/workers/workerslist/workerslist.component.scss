@@ -1,0 +1,29 @@
+.search-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  
+  .workers-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  
+  .worker-card {
+    width: 300px;
+  
+    .avatar {
+      width: 64px;
+      height: 64px;
+      object-fit: cover;
+      border-radius: 50%;
+    }
+  
+    .worker-card-actions {
+      display: flex;
+      justify-content: space-around;
+    }
+  }
+  

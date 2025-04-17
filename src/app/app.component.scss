@@ -20,4 +20,46 @@
   .content-area {
     padding: 1rem;
   }
+
+
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    /* Negative horizontal margins provide gutters */
+    margin-left: -15px;
+    margin-right: -15px;
+  }
+  
+  /* 
+    Column: By default, equal-width columns.
+    Each column gets horizontal padding as gutter space.
+  */
+  .col {
+    flex: 1 0 0%;
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+  
+  /* 
+    Mixin for fixed-width column classes. 
+    Use it to compute a percentage of a 12-column grid.
+  */
+  @mixin make-col($columns, $total: 12) {
+    flex: 0 0 (100% / $total * $columns);
+    max-width: (100% / $total * $columns);
+  }
+  
+  /* Generate utility classes for columns widths 1 to 12. */
+  .col-1  { @include make-col(1);  }
+  .col-2  { @include make-col(2);  }
+  .col-3  { @include make-col(3);  }
+  .col-4  { @include make-col(4);  }
+  .col-5  { @include make-col(5);  }
+  .col-6  { @include make-col(6);  }
+  .col-7  { @include make-col(7);  }
+  .col-8  { @include make-col(8);  }
+  .col-9  { @include make-col(9);  }
+  .col-10 { @include make-col(10); }
+  .col-11 { @include make-col(11); }
+  .col-12 { @include make-col(12); }
   

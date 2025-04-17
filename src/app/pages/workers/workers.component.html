@@ -4,7 +4,6 @@
       <span>list</span>
     </nav>
   </div>
-  <h1><span>Workers</span></h1>
   <ng-container *ngIf="!childActive">
     <div class="menu-card-list">
       <app-menucard *ngFor="let card of cards" [data]="card"></app-menucard>
@@ -12,3 +11,4 @@
   </ng-container>
   <router-outlet (activate)="onActivate($event)" (deactivate)="onDeactivate($event)"></router-outlet>
   
+

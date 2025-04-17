@@ -1,5 +1,6 @@
-import { Injectable, Injector, runInInjectionContext } from '@angular/core';
+import { Injectable, Injector, NgZone, runInInjectionContext } from '@angular/core';
 import { Firestore, collection, collectionData, doc, docData, setDoc, updateDoc, deleteDoc, serverTimestamp } from '@angular/fire/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from '@angular/fire/storage';
 import { Observable } from 'rxjs';
 import { WorkerModel } from '../models/workers/worker';
 
@@ -7,7 +8,7 @@ import { WorkerModel } from '../models/workers/worker';
   providedIn: 'root'
 })
 export class WorkersService {
-  constructor(private firestore: Firestore, private injector: Injector) {}
+  constructor(private firestore: Firestore, private injector: Injector, private zone: NgZone) {}
 
   addWorker(worker: Omit<WorkerModel, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> {
     const workersCollection = collection(this.firestore, 'workers');
@@ -49,5 +50,16 @@ export class WorkersService {
   deleteWorker(id: string): Promise<void> {
     const workerDocRef = doc(this.firestore, `workers/${id}`);
     return deleteDoc(workerDocRef);
+  }
+
+  uploadProfileImage(file: File): Promise<string> {
+    return runInInjectionContext(this.injector, () => {
+      const storage = getStorage();
+      const filePath = `profiles/${Date.now()}_${file.name}`;
+      const storageRef = ref(storage, filePath);
+      return uploadBytes(storageRef, file).then(snapshot => 
+        this.zone.run(() => getDownloadURL(snapshot.ref))
+      );
+    });
   }
 }
