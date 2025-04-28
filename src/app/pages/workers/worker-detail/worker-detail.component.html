@@ -1,0 +1,82 @@
+<h1>Worker Details</h1>
+
+<ng-container *ngIf="!loading && worker">
+    <mat-grid-list cols="3" gutterSize="5px" rowHeight="500px">
+        <mat-grid-tile [colspan]="3">
+            <div class="tile-inner">
+                <!-- Row 1: full-width toolbar -->
+                <app-action-toolbar
+                  (action)="onAction($event)"
+                  [buttons]="[
+                    { id: 'save',   label: 'Save',   icon: 'save'   },
+                    { id: 'settle', label: 'Settle', icon: 'save' }
+                  ]"
+                ></app-action-toolbar>
+          
+                <!-- Row 2: two cards side-by-side -->
+                <div class="details-row">
+                  <app-worker-details-card
+                    [worker]="worker"
+                    [form]="form"
+                    [operations]="operations"
+                    [farms]="farms"
+                  ></app-worker-details-card>
+          
+                  <app-worker-identity-card
+                    [worker]="worker"
+                  ></app-worker-identity-card>
+                </div>
+              </div>
+        </mat-grid-tile>
+        <mat-grid-tile colspan="2">
+          <app-transaction-list
+          [workerId]="worker.id"
+        ></app-transaction-list>
+        </mat-grid-tile>
+        <mat-grid-tile >
+        <app-worker-timeline
+            [events]="events"
+      ></app-worker-timeline>
+        </mat-grid-tile>
+    </mat-grid-list>
+  
+</ng-container>
+<!-- <div class="worker-detail-grid">
+    <div class="toolbar">
+      <app-action-toolbar
+        (action)="onAction($event)"
+        [buttons]="[
+            { id: 'save', label: 'Save', icon: 'save' },
+            { id: 'settle', label: 'Settle', icon: 'save' }
+        ]"
+      ></app-action-toolbar>
+    </div>
+
+    <div class="details">
+      <app-worker-details-card
+        [worker]="worker"
+        [form]="form"
+        [operations]="operations"
+        [farms]="farms"
+      ></app-worker-details-card>
+    </div>
+
+
+    <div class="identity">
+      <app-worker-identity-card
+        [worker]="worker"
+      ></app-worker-identity-card>
+    </div>
+
+    <div class="transactions">
+      <app-transaction-list
+        [workerId]="worker.id"
+      ></app-transaction-list>
+    </div>
+
+    <div class="timeline">
+      <app-worker-timeline
+        [events]="events"
+      ></app-worker-timeline>
+    </div>
+  </div> -->

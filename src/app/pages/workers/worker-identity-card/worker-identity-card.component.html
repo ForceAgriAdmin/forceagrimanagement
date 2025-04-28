@@ -1,0 +1,41 @@
+<!-- worker-identity-card.component.html -->
+<mat-card *ngIf="worker" class="identity-card">
+    <mat-card-header>
+      <mat-card-title>Identity Card</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="grid">
+        <div class="profile">
+          <img [src]="worker.profileImageUrl || 'assets/default-avatar.png'" alt="Profile" />
+        </div>
+        <div class="details">
+          <h1>{{ worker.firstName }} {{ worker.lastName }}</h1>
+          <div class="field">Emp Number: <span class="bold-text">{{ worker.employeeNumber }}</span></div>
+          <div class="field">ID Number: <span class="bold-text">{{ worker.idNumber }}</span></div>
+          <div class="field">Operation: <span class="bold-text">{{ getOperationName() }}</span></div>
+          <div class="field">Farm: <span class="bold-text">{{ getFarmName()}}</span></div>
+        </div>
+        <div class="qr">
+          <ejs-qrcodegenerator
+          style="display: block;background-color: transparent !important;"
+            [displayText]="noText"
+            mode="Svg"
+            [value]="'http://localhost:4200/qr/card/452125698545125'"
+            width="150"
+            height="150"
+            backgroundColor="transparent">
+          </ejs-qrcodegenerator>
+        </div>
+        <div class="barcode">
+          <ejs-barcodegenerator
+            type="Code128"
+            [value]="'452125698545125'"
+            width="100%"
+            height="100px"
+            backgroundColor="transparent">
+          </ejs-barcodegenerator>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+  

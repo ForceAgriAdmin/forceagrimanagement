@@ -1,0 +1,17 @@
+mat-card{
+    height: 100%;
+    width: 100%;
+    margin: 0;               /* remove any default mat-card margins */
+    box-sizing: border-box;  /* keep padding/border inside */
+    
+    /* optional—if you want your header/content/actions to stack and stretch: */
+    display: flex;
+    flex-direction: column;
+    background-color: var(--mat-sys-background) !important;
+  }
+
+  :host {
+    display: flex;   /* or flex, either works */
+    height: 100%;
+    width: 100%;
+  }

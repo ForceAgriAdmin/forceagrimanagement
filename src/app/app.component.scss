@@ -1,4 +1,6 @@
-
+mat-card{
+  background-color: var(--mat-sys-background) !important;
+}
 
   .mat-toolbar {
     background-color: var(--mat-sys-primary);
@@ -14,7 +16,22 @@
     padding: 20px;
     background-color: var(--mat-sys-surface-container-lowest);
   }
+  .action-button-add{
+    color: var(--mat-sys-error);
+    border-radius: 25px;
+    border: 2px solid var(--mat-sys-error);
+  }
 
+  .action-button-edit{
+    color: #ffcc00;
+    border-radius: 25px;
+    border: 2px solid #ffcc00;
+  }
+  .action-button-delete{
+    color: var(--mat-sys-error);
+    border-radius: 25px;
+    border: 2px solid var(--mat-sys-error);
+  }
  
   
   .content-area {

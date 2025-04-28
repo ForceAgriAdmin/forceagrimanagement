@@ -1,0 +1,41 @@
+:host {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    
+  }
+  
+  .detail-card {
+    max-height: 420px;
+    background-color: var(--mat-sys-background);
+    display: flex;
+    flex-direction: column;
+    flex: 1;  /* so it stretches inside its parent grid cell */
+  }
+  
+  .detail-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;  /* space between fields */
+    margin-top: 8px;
+  }
+  
+  mat-form-field {
+    width: 100%;  /* each field fills its grid cell */
+  }
+
+  .amount {
+    font-size: 16px;
+    font-weight: bold;
+    margin: 0 16px;
+
+    &.positive {
+      color: #4caf50; // green
+    }
+
+    &.negative {
+      color: #f44336; // red
+    }
+  }
+
+  

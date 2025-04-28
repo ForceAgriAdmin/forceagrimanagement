@@ -4,6 +4,7 @@ import { WorkersComponent } from './pages/workers/workers.component';
 import { TransactionsComponent } from './pages/transactions/transactions.component';
 import { WorkerslistComponent } from './pages/workers/workerslist/workerslist.component';
 import { LoginComponent } from './pages/auth/login/login.component';
+import { WorkerDetailComponent } from './pages/workers/worker-detail/worker-detail.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -19,7 +20,10 @@ export const routes: Routes = [
   {
     path: 'workers',
     component: WorkersComponent,
-    children: [{ path: 'list', component: WorkerslistComponent }],
+    children: [
+      { path: 'list', component: WorkerslistComponent },
+      { path: 'list/edit/:id', component: WorkerDetailComponent },
+    ],
   },
   {
     path: 'transactions',

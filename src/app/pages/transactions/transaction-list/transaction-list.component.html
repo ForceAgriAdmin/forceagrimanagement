@@ -1,0 +1,38 @@
+<mat-card>
+  <ng-container *ngIf="transactions?.length; else emptyList">
+    <mat-card-header>
+      <mat-card-title>Transactions</mat-card-title>
+    </mat-card-header>
+    
+    <div class="tx-list">
+      <mat-card *ngFor="let tx of transactions" class="transaction-card">
+        <div class="transaction-content">
+          <div class="transaction-details">
+            <div class="description">{{ tx.description }}</div>
+            <div class="operation">{{ tx.operation }}</div>
+          </div>
+  
+          <div
+            class="amount"
+            [ngClass]="{ positive: tx.amount >= 0, negative: tx.amount < 0 }"
+          >
+            {{ tx.amount | number: '1.2-2' }}
+          </div>
+  
+          <button
+            mat-icon-button
+            class="edit-button"
+            (click)="onEdit(tx)"
+            aria-label="Edit transaction"
+          >
+            <mat-icon>edit</mat-icon>
+          </button>
+        </div>
+      </mat-card>
+    </div>
+  </ng-container>
+  <ng-template #emptyList>
+    <p class="no-transactions">No transactions to display.</p>
+  </ng-template>
+  
+</mat-card>

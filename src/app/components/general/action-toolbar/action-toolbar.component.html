@@ -1,0 +1,10 @@
+<mat-card>
+    <mat-toolbar>
+        <ng-container *ngFor="let btn of buttons">
+        <button mat-button (click)="onClick(btn.id)" class="force-button">
+            <mat-icon *ngIf="btn.icon">{{ btn.icon }}</mat-icon>
+            <span class="label-text">{{ btn.label }}</span>
+        </button>
+        </ng-container>
+    </mat-toolbar>
+</mat-card>

@@ -1,0 +1,54 @@
+<mat-card *ngIf="worker" class="detail-card">
+    <mat-card-header>
+      <mat-card-title>Worker Details</mat-card-title>
+    </mat-card-header>
+  
+    <mat-card-content>
+      <form [formGroup]="form" class="detail-form">
+        <!-- row 1: first + last -->
+        <mat-form-field appearance="fill">
+          <mat-label>First Name</mat-label>
+          <input matInput formControlName="firstName" />
+        </mat-form-field>
+        <mat-form-field appearance="fill">
+          <mat-label>Last Name</mat-label>
+          <input matInput formControlName="lastName" />
+        </mat-form-field>
+  
+        <!-- row 2: ID + employee -->
+        <mat-form-field appearance="fill">
+          <mat-label>ID Number</mat-label>
+          <input matInput formControlName="idNumber" />
+        </mat-form-field>
+        <mat-form-field appearance="fill">
+          <mat-label>Employee Number</mat-label>
+          <input matInput formControlName="employeeNumber" />
+        </mat-form-field>
+  
+        <!-- row 3: farm + operation -->
+        <mat-form-field appearance="fill">
+          <mat-label>Farm</mat-label>
+          <mat-select formControlName="farmId">
+            <mat-option *ngFor="let f of farms" [value]="f.id">{{ f.name }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="fill">
+          <mat-label>Operation</mat-label>
+          <mat-select formControlName="operationId">
+            <mat-option *ngFor="let op of operations" [value]="op.id">{{ op.name }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </form>
+    </mat-card-content>
+    <mat-card-footer style="margin-left: 15px;">
+      <mat-card-title>
+        <div
+            class="amount"
+            [ngClass]="{ positive: worker.currentBalance >= 0, negative: worker.currentBalance < 0 }"
+          >
+            Running Balance: N{{ worker.currentBalance | currency }}
+          </div>
+      </mat-card-title>
+    </mat-card-footer>
+  </mat-card>
+  

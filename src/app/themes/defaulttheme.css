@@ -60,6 +60,8 @@ html {
   --mat-sys-error-container: light-dark(#ffdad6, #93000a);
   --mat-sys-on-error-container: light-dark(#410002, #ffdad6);
 
+
+
   /* Neutral variant palette variables */
   --mat-sys-surface-variant: light-dark(#dee4db, #424842);
   --mat-sys-on-surface-variant: light-dark(#424842, #c2c8bf);

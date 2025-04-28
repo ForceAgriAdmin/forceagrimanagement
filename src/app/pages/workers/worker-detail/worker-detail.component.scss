@@ -1,0 +1,34 @@
+.mat-grid-tile .mat-grid-tile-content {
+    padding: 0 !important;
+  }
+
+  .tile-inner {
+    display: flex;
+    flex-direction: column;
+    height: 100%;        /* fill the tile vertically */
+    width: 100%;         /* fill the tile horizontally */
+    box-sizing: border-box;
+  }
+  
+  .tile-inner > app-action-toolbar {
+    flex: none;          /* only as tall as its own content */
+    width: 100%;
+  }
+  
+  .details-row {
+    padding-top: 10px;
+    display: flex;
+    flex: 1;             /* take up all remaining vertical space */
+    gap: 10px;           /* space between the two cards */
+    width: 100%;
+  }
+  
+  /* tweak proportions as you like */
+  .details-row app-worker-details-card {
+    flex: 2;             /* e.g. 2/3 of width */
+  }
+  
+  .details-row app-worker-identity-card {
+    flex: 1;             /* e.g. 1/3 of width */
+  }
+  

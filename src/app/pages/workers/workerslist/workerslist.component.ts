@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { WorkersService } from '../../../services/workerservice.service'; 
 import { WorkerModel } from '../../../models/workers/worker';
 import { FormsModule } from '@angular/forms';
@@ -6,6 +7,7 @@ import { CommonModule } from '@angular/common';
 import { MatListModule } from '@angular/material/list';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
+import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 
@@ -26,6 +28,7 @@ import { MatDialog } from '@angular/material/dialog';
     MatIconModule,
     MatFormFieldModule,
     MatInputModule,
+    MatProgressSpinnerModule,
     ForceButtonComponent,
     ForceSearchComponent
   ],
@@ -37,7 +40,7 @@ export class WorkerslistComponent implements OnInit{
   filteredWorkers: WorkerModel[] = [];
   searchTerm: string = '';
   operationMap: { [id: string]: string } = {};
-  constructor(private workersService: WorkersService,private operationService: OperationService, private dialog: MatDialog) {}
+  constructor(private workersService: WorkersService,private operationService: OperationService, private dialog: MatDialog,private router: Router) {}
 
   ngOnInit(): void {
     this.workersService.getWorkers().subscribe((data: WorkerModel[]) => {
@@ -94,8 +97,9 @@ export class WorkerslistComponent implements OnInit{
   }
   
   onEdit(worker: WorkerModel) {
-    console.log('Edit worker', worker.firstName);
-    // ...
+    this.router.navigate(
+      ['/workers', 'list', 'edit', worker.id]
+    );
   }
   
   onRemove(worker: WorkerModel) {

@@ -1,0 +1,22 @@
+<!-- <mat-card>
+    <mat-card-title>Timeline</mat-card-title>
+    <mat-list>
+      <mat-list-item *ngFor="let ev of events">
+        <mat-icon matListIcon>{{ ev.icon }}</mat-icon>
+        <div matLine>{{ ev.actionDate | date:'short' }}</div>
+        <div matLine>{{ ev.description }}</div>
+      </mat-list-item>
+    </mat-list>
+  </mat-card>
+   -->
+<mat-card>
+  <mat-card-header>
+    <mat-card-title>Timeline</mat-card-title>
+  </mat-card-header>
+  <ejs-timeline>
+    <e-items>
+        <e-item *ngFor="let item of mealTimes" [content]="item.content" [oppositeContent]="item.oppositeContent"> </e-item>
+    </e-items>
+  </ejs-timeline>
+</mat-card>
+

@@ -1,0 +1,25 @@
+<h2 mat-dialog-title>Scan Card</h2>
+<mat-dialog-content>
+  <mat-form-field appearance="fill" class="full-width">
+    <mat-label>Card Number</mat-label>
+    <input
+      matInput
+      [formControl]="cardNumberControl"
+      maxlength="20"
+      autocomplete="off"
+      autofocus
+    />
+    <mat-error *ngIf="cardNumberControl.hasError('required')">
+      Card number is required
+    </mat-error>
+    <mat-error *ngIf="cardNumberControl.hasError('pattern')">
+      Must be exactly 20 digits
+    </mat-error>
+  </mat-form-field>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Cancel</button>
+  <button mat-flat-button color="primary" (click)="onSubmit()" [disabled]="cardNumberControl.invalid">
+    Submit
+  </button>
+</mat-dialog-actions>

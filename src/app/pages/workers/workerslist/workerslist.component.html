@@ -1,7 +1,12 @@
+
+
 <h2>
   <span>Workers List</span>
 </h2>
 
+<div *ngIf="workers.length < 0">
+  <mat-spinner></mat-spinner>
+</div>
 <div class="search-toolbar">
   <app-force-search
     label="Search"
@@ -40,15 +45,12 @@
     <mat-card-actions class="worker-card-actions">
       <button mat-button color="primary" (click)="onAddTransaction(worker)">
         <mat-icon>attach_money</mat-icon>
-        Add
       </button>
       <button mat-button color="accent" (click)="onEdit(worker)">
         <mat-icon>edit</mat-icon>
-        Edit
       </button>
-      <button mat-button color="warn" (click)="onRemove(worker)">
+      <button mat-button class="action-button" (click)="onRemove(worker)">
         <mat-icon>delete</mat-icon>
-        Remove
       </button>
     </mat-card-actions>
   </mat-card>

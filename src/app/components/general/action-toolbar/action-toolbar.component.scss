@@ -1,0 +1,34 @@
+.force-button {
+    height: 50px;
+    line-height: 56px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center; 
+    gap: 5px;
+    font-size: 16px;
+    border-radius: 4px;
+    margin-right: 10px;
+    border: 1px solid #ccc;
+    background-color: var(--mat-sys-primary);
+    color: #eee !important; 
+  
+    &:hover {
+      background-color: #eee;
+      color: var(--mat-sys-primary)
+       !important;
+    }
+  
+    .label-text {
+      display: inline-block;
+    }
+  
+    @media (max-width: 1000px) {
+      .label-text {
+        display: none;
+      }
+      gap: 0;
+      width: 56px; 
+      padding: 0; 
+      justify-content: center; 
+    }
+  }

@@ -1,0 +1,83 @@
+.identity-card {
+    background-color: var(--mat-sys-background);
+    .mat-card-content {
+      padding: 1rem;
+    }
+  
+    .grid {
+      display: grid;
+      grid-template-columns: 100px 1fr;
+      grid-template-rows: auto auto;
+      grid-template-areas:
+        "profile details"
+        "qr barcode";
+      gap: 0.5rem 1rem;
+  
+      .profile {
+        grid-area: profile;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+  
+        img {
+          width: 200px;
+          height: 200px;
+          object-fit: cover;
+          border-radius: 10px;
+          margin-left: 50px;
+        }
+      }
+  
+      .details {
+        grid-area: details;
+        margin-left: 50px;
+  
+        .name {
+          
+          font-weight: 600;
+          margin-bottom: 0.5rem;
+        }
+  
+        .field {
+            font-size: 20px;
+          margin-bottom: 0.25rem;
+        }
+        .bold-text{
+            font-weight: 600;
+        }
+      }
+  
+      .qr {
+        grid-area: qr;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width:"150px" !important;
+        height:"150px";
+      }
+  
+      .barcode {
+        background-color: transparent !important;
+        grid-area: barcode;
+        display: flex;
+        align-items: center;
+      }
+    }
+  }
+  .barcode {
+    background-color: var(--mat-sys-secondary) !important;
+    grid-area: barcode;
+    display: flex;
+    align-items: center;
+  }
+  
+  ::ng-deep ejs-barcode-generator text,
+::ng-deep ejs-qrcode text {
+  display: none !important;
+}
+
+:host {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
