@@ -133,6 +133,7 @@ export class WorkerDetailComponent implements OnInit {
       };
       this.loading = true;
       this.ws.updateWorker(updateData).then(() => {
+        
         this.loading = false;
         this.router.navigate(['/workers/list']);
       });

@@ -2,6 +2,25 @@ mat-card{
   background-color: var(--mat-sys-background) !important;
 }
 
+.info-snackbar {
+  background-color: #2196f3; /* Blue */
+  color: white;
+}
+
+.success-snackbar {
+  background-color: #10b11d; /* Blue */
+  color: white;
+}
+
+.warning-snackbar {
+  background-color: #ff9800; /* Orange */
+  color: white;
+}
+
+.error-snackbar {
+  background-color: #f44336; /* Red */
+  color: white;
+}
   .mat-toolbar {
     background-color: var(--mat-sys-primary);
   }

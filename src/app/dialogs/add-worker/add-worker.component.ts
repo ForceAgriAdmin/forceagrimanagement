@@ -9,6 +9,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { OperationService } from '../../services/operation.service';
 import { OperationModel } from '../../models/operations/operation';
 import { WorkersService } from '../../services/workerservice.service';
+import { CardService } from '../../services/card.service';
 
 @Component({
   selector: 'app-add-worker',
@@ -35,6 +36,7 @@ end: "center"|"start"|"end"|undefined;
     private fb: FormBuilder,
     private operationService: OperationService,
     private workersService: WorkersService,
+    private cardService: CardService,
     private dialogRef: MatDialogRef<AddWorkerComponent>
   ) {
     // Note: profileImageUrl is not in the form since that comes from file upload.

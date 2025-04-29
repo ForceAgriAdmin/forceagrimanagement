@@ -18,6 +18,13 @@ import {ForceSearchComponent} from '../../../components/general/force-search/for
 
 import { AddWorkerComponent } from '../../../dialogs/add-worker/add-worker.component'; // adjust the path accordingly
 import { MatDialog } from '@angular/material/dialog';
+import { CardScanComponent, CardScanDialogData } from '../../../dialogs/card-scan/card-scan.component';
+import { CardService } from '../../../services/card.service';
+import { NotificationService } from '../../../services/notification.service';
+import { MessageModule } from '@syncfusion/ej2-angular-notifications'
+import { NotificationMessage } from '../../../models/layout/notificationmessage';
+import { timeout } from 'rxjs';
+
 @Component({
   selector: 'app-workerslist',
   imports: [
@@ -30,17 +37,26 @@ import { MatDialog } from '@angular/material/dialog';
     MatInputModule,
     MatProgressSpinnerModule,
     ForceButtonComponent,
-    ForceSearchComponent
+    ForceSearchComponent,
+    MessageModule
   ],
   templateUrl: './workerslist.component.html',
   styleUrl: './workerslist.component.scss'
 })
 export class WorkerslistComponent implements OnInit{
   workers: WorkerModel[] = [];
+  notifications: NotificationMessage[] = [];
+  message!: NotificationMessage;
   filteredWorkers: WorkerModel[] = [];
   searchTerm: string = '';
   operationMap: { [id: string]: string } = {};
-  constructor(private workersService: WorkersService,private operationService: OperationService, private dialog: MatDialog,private router: Router) {}
+  constructor(
+      private workersService: WorkersService,
+      private operationService: OperationService,
+      private dialog: MatDialog,
+      private router: Router,
+      private cardService: CardService,
+      private notficationService: NotificationService) {}
 
   ngOnInit(): void {
     this.workersService.getWorkers().subscribe((data: WorkerModel[]) => {
@@ -86,14 +102,41 @@ export class WorkerslistComponent implements OnInit{
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-         this.workersService.addWorker(result).then(() => { /* refresh list if needed */ });
+         this.workersService.addWorker(result).then(() => { 
+            
+          });
       }
     });
   }
 
   onAddTransaction(worker: WorkerModel) {
-    console.log('Add money to', worker.firstName);
-    // Or open a dialog, redirect, etc.
+    const dialogRef = this.dialog.open<CardScanComponent, CardScanDialogData, { cardNumber: string }>(
+      CardScanComponent,
+      {
+        width: '400px',
+        data: { workerId: worker.id ?? null },
+      }
+    );
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result?.cardNumber) {
+        this.cardService.scanWorkerCard(result.cardNumber,worker.id).then(response => {
+          if(response){
+              this.message = {id: 'msg_info',severity:'Info',message:'Card Scan Successful'};
+              this.notifications.push(this.message);
+              setTimeout(() => {
+                console.log('Waited 3 seconds');
+                this.notifications.pop();
+              }, 3000);
+              
+          }
+          else{
+            this.message = {id: 'msg_error',severity:'Error',message:'Invalid Card!!!'};
+              this.notifications.push(this.message);
+          }
+        });
+      }
+    });
   }
   
   onEdit(worker: WorkerModel) {

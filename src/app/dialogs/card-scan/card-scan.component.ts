@@ -1,12 +1,24 @@
 import { Component, Inject } from '@angular/core';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { FormControl, Validators } from '@angular/forms';
-import { MatCardModule } from '@angular/material/card';
+import { MatDialogRef,MatDialogModule, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { CommonModule } from '@angular/common';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatButtonModule } from '@angular/material/button';
+import { FormControl, Validators,FormGroup ,ReactiveFormsModule} from '@angular/forms';
 export interface CardScanDialogData {
   workerId?: string | null;
 }
 
 @Component({
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatButtonModule],
   selector: 'app-card-scan',
   templateUrl: './card-scan.component.html',
 })

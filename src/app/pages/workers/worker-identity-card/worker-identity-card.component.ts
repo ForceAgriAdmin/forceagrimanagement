@@ -13,6 +13,8 @@ import { OperationService } from '../../../services/operation.service';
 import { FarmModel } from '../../../models/farms/farm';
 import { OperationModel } from '../../../models/operations/operation';
 import { Observable } from 'rxjs';
+import { IdentityCard } from '../../../models/workers/identitycard';
+import { CardService } from '../../../services/card.service';
 
 @Component({
   standalone: true,
@@ -30,14 +32,16 @@ export class WorkerIdentityCardComponent {
   @Input() worker!: WorkerModel;
   operation!: OperationModel;
   farm!: FarmModel;
+  workerIdentityCard!: IdentityCard;
+  cardUrl: string = '';
   public noText: DisplayTextModel = { visibility: false };
 
 
-  constructor(private os: OperationService,private fs: FarmService){
+  constructor(private os: OperationService,private fs: FarmService,private cs: CardService){
 
   }
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     this.os
       .getOperation(this.worker.operationId)
       .subscribe(op => {
@@ -56,6 +60,15 @@ export class WorkerIdentityCardComponent {
         }
         this.farm = farm;  // `op` here is now definitely OperationModel
       });
+      (await this.cs
+      .getWorkerCard(this.worker.id))
+        .subscribe(card => {
+          if (!card) {
+            console.warn(`No card found for ID ${this.worker.farmId}`);
+            return;
+          }
+          this.workerIdentityCard = card;  // `op` here is now definitely OperationModel
+        });
   }
 
   getOperationName(): string {
@@ -64,5 +77,13 @@ export class WorkerIdentityCardComponent {
 
   getFarmName(): string {
     return this.farm?.name ?? '—';
+  }
+
+  get QrValue(): string {
+    return `http://localhost:4200/qr/card/${this.workerIdentityCard.number}`;
+  }
+
+  get BarcodeValue(): string {
+    return `${this.workerIdentityCard.number}`;
   }
 }
