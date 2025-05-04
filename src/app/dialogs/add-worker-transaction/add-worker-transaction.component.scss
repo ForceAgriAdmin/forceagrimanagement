@@ -1,0 +1,20 @@
+.full-width {
+    width: 100%;
+    margin-bottom: 12px;
+  }
+  
+  /* Flex layout for two-column form in the dialog */
+  .dialog-form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  
+  .dialog-column {
+    flex: 1 0 0%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  

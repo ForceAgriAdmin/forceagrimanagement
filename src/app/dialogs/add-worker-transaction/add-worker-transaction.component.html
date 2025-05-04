@@ -1,0 +1,45 @@
+<h2 mat-dialog-title>Add Transaction</h2>
+<mat-dialog-content>
+  <!-- Wrap form controls inside a form with the workerForm FormGroup -->
+  <form [formGroup]="transactionForm">
+    <div class="dialog-form-row">
+      <!-- Left Column -->
+      <div class="dialog-column">
+
+        <h3>Current Balance: N$152.45</h3>
+
+        <mat-form-field appearance="fill" class="full-width">
+            <mat-label>Transaction Type</mat-label>
+            <mat-select formControlName="transactionTypeId" required>
+                <mat-option [value]="0">
+                    Please Select
+                  </mat-option>
+              <!-- <mat-option *ngFor="let type of transactionTypes" [value]="type.id">
+                {{ type.name }}
+              </mat-option> -->
+            </mat-select>
+          </mat-form-field>
+  
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Amount</mat-label>
+          <input matInput formControlName="amount" required />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Description</mat-label>
+          <input matInput formControlName="Description" required />
+        </mat-form-field>
+      </div>
+
+      <div class="dialog-column">
+        <div class="profile">
+            <img [src]="worker.profileImageUrl || 'assets/default-avatar.png'" alt="Profile" />
+          </div>
+      </div>
+    </div>
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions >
+  <button mat-button (click)="onCancel()">Cancel</button>
+  <button mat-button color="primary" (click)="onSubmit()" [disabled]="transactionForm.invalid">Add</button>
+</mat-dialog-actions>

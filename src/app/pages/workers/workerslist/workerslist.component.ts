@@ -24,6 +24,7 @@ import { NotificationService } from '../../../services/notification.service';
 import { MessageModule } from '@syncfusion/ej2-angular-notifications'
 import { NotificationMessage } from '../../../models/layout/notificationmessage';
 import { timeout } from 'rxjs';
+import { AddWorkerTransactionComponent, AddWorkerTransactionDialogData } from '../../../dialogs/add-worker-transaction/add-worker-transaction.component';
 
 @Component({
   selector: 'app-workerslist',
@@ -128,11 +129,17 @@ export class WorkerslistComponent implements OnInit{
                 console.log('Waited 3 seconds');
                 this.notifications.pop();
               }, 3000);
+
+              this.openAddTransactionDialog(worker);
               
           }
           else{
             this.message = {id: 'msg_error',severity:'Error',message:'Invalid Card!!!'};
               this.notifications.push(this.message);
+              setTimeout(() => {
+                console.log('Waited 3 seconds');
+                this.notifications.pop();
+              }, 3000);
           }
         });
       }
@@ -144,7 +151,23 @@ export class WorkerslistComponent implements OnInit{
       ['/workers', 'list', 'edit', worker.id]
     );
   }
-  
+  openAddTransactionDialog(worker: WorkerModel) {
+    const ref = this.dialog.open<AddWorkerTransactionComponent, AddWorkerTransactionDialogData, any>(
+      AddWorkerTransactionComponent,
+      {
+        width: '600px',
+        data: { worker }
+      }
+    );
+
+    ref.afterClosed().subscribe(result => {
+      if (result) {
+        // result will be { transactionTypeId, amount, description, worker }
+        console.log('New transaction payload:', result);
+        // → call your service to save the transaction...
+      }
+    });
+  }
   onRemove(worker: WorkerModel) {
     console.log('Remove worker', worker.firstName);
     // ...
