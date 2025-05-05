@@ -1,0 +1,57 @@
+Create firebase user statemanagment
+
+
+Scan Barcode Component
+	Scan Card Number
+	Check if Card is active
+	return WorkerId on when card is 	active
+
+Add Transaction on WorkerListComponent
+
+New Transaction Dialog
+	show worker ballance
+	amount for transaction
+	transaction type
+	Description
+	photo of worker
+
+
+General Transaction list
+
+Load actual worker transactions on worker details page
+
+Create Notification Component
+
+add worker type to add worker dialog
+
+crop profile pic when uploading and updating
+
+Create bulk transaction
+	type
+		payment group	
+		custom select workers
+	transaction type
+	amount
+	Description
+
+Manage
+	Farm
+		update details
+		add/update logo(s)
+	Worker Types
+	Transaction Types
+Reports
+	List of reports
+	print to pdf 
+	export to excel
+
+User management
+	add/update/delete user by email
+	role management
+	create 1 SuperAdmin user backdoor 	for support
+	
+Signout
+
+Login
+
+Password Reset

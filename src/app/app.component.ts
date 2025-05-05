@@ -11,6 +11,7 @@ import { AuthService } from './services/auth.service';
 import { Observable } from 'rxjs';
 import { AngularFireModule } from '@angular/fire/compat';
 import { AngularFirestoreModule } from '@angular/fire/compat/firestore';
+import { UserProfile } from './models/users/statemanagement/user.model';
 @Component({
   selector: 'app-root',
   imports: [
@@ -36,14 +37,25 @@ export class AppComponent implements OnInit {
     { icon: 'money', label: 'Transaction', route: 'transactions' }
   ];
   user$: Observable<any>;
+
+  loggedInUser: UserProfile = {
+    uid: '',
+    email: '',
+    displayName: ''
+  };
   constructor(private authService: AuthService, private router: Router) {
-    this.user$ = this.authService.user$;
+    this.user$ = this.authService.authState$;
   }
   ngOnInit(): void {
-    this.authService.user$.subscribe(user => {
+    this.authService.authState$.subscribe(user => {
+
       if (!user) {
         this.router.navigate(['/login']);
       }
+
+      this.loggedInUser.email = user?.email || '';
+      this.loggedInUser.uid = user?.uid || '';
+
     });
   }
 }
