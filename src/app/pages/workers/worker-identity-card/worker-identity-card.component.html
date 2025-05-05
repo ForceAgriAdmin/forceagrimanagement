@@ -15,7 +15,7 @@
           <div class="field">Operation: <span class="bold-text">{{ getOperationName() }}</span></div>
           <div class="field">Farm: <span class="bold-text">{{ getFarmName()}}</span></div>
         </div>
-        <div class="qr">
+        <div *ngIf="workerIdentityCard" class="qr">
           <ejs-qrcodegenerator
           style="display: block;background-color: transparent !important;"
             [displayText]="noText"
@@ -26,7 +26,7 @@
             backgroundColor="transparent">
           </ejs-qrcodegenerator>
         </div>
-        <div class="barcode">
+        <div *ngIf="workerIdentityCard" class="barcode">
           <ejs-barcodegenerator
             type="Code128"
             [value]="BarcodeValue"

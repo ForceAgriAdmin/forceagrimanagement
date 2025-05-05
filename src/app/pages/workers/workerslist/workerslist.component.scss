@@ -27,5 +27,19 @@
     }
   }
 
+  .amount {
+    font-size: 16px;
+    font-weight: bold;
+    margin: 0 16px;
+
+    &.positive {
+      color: #4caf50; // green
+    }
+
+    &.negative {
+      color: #f44336; // red
+    }
+  }
+
   
   

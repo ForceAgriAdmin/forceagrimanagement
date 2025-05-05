@@ -42,12 +42,15 @@
     </mat-card-content>
     <mat-card-footer style="margin-left: 15px;">
       <mat-card-title>
-        <div
-            class="amount"
-            [ngClass]="{ positive: worker.currentBalance >= 0, negative: worker.currentBalance < 0 }"
-          >
-            Running Balance: N{{ worker.currentBalance | currency }}
-          </div>
+        <h3>
+          Running Balance:
+          <span
+              class="amount"
+              [ngClass]="{ positive: worker.currentBalance >= 0, negative: worker.currentBalance < 0 }"
+            >
+              N{{ worker.currentBalance | currency }}
+        </span>
+        </h3>
       </mat-card-title>
     </mat-card-footer>
   </mat-card>

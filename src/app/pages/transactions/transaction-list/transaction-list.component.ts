@@ -1,9 +1,10 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { TransactionModel } from '../../../models/transactions/transaction';
+import { TransactionsService } from '../../../services/transactions.service';
 
 @Component({
   selector: 'app-transaction-list',
@@ -11,15 +12,21 @@ import { TransactionModel } from '../../../models/transactions/transaction';
   templateUrl: './transaction-list.component.html',
   styleUrl: './transaction-list.component.scss'
 })
-export class TransactionListComponent {
+export class TransactionListComponent implements OnInit{
   @Input() workerId!: string;
   @Output() edit = new EventEmitter<TransactionModel>();
-  // dummy data until real backend hooked
-  transactions: TransactionModel[] = [
-    { timestamp: new Date(), amount: 100, description: 'Initial balance',operation:'Irrigation' },
-    { timestamp: new Date(), amount: -20, description: 'Purchase supplies' ,operation:'Irrigation' },
-    { timestamp: new Date(), amount: 50, description: 'Bonus payment' ,operation:'Irrigation' }
-  ];
+  
+  transactions: TransactionModel[] = [];
+
+  constructor(private transactionService: TransactionsService){}
+
+  ngOnInit(): void {
+    this.transactionService.getTransactionsByWorkerId(this.workerId).subscribe((t: TransactionModel[]) => {
+         this.transactions = t;
+        });
+  }
+
+
 
   onEdit(tx: TransactionModel) {
     this.edit.emit(tx);

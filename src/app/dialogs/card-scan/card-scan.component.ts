@@ -24,10 +24,13 @@ export interface CardScanDialogData {
   templateUrl: './card-scan.component.html',
 })
 export class CardScanComponent {
+
   cardNumberControl = new FormControl('', [
     Validators.required,
     Validators.pattern(/^\d{20}$/),
   ]);
+
+end: "center"|"start"|"end"|undefined;
 
   constructor(
     public dialogRef: MatDialogRef<CardScanComponent>,
@@ -38,6 +41,12 @@ export class CardScanComponent {
     if (this.cardNumberControl.valid) {
       const cardNumber = this.cardNumberControl.value;
       this.dialogRef.close({ cardNumber });
+    }
+  }
+
+  checkCard(event: any){
+    if(event.target.value.length == 20){
+      this.onSubmit();
     }
   }
 

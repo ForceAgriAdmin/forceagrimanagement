@@ -11,7 +11,7 @@ import { AuthService } from './services/auth.service';
 import { Observable } from 'rxjs';
 import { AngularFireModule } from '@angular/fire/compat';
 import { AngularFirestoreModule } from '@angular/fire/compat/firestore';
-import { UserProfile } from './models/users/statemanagement/user.model';
+import { UserProfile } from './models/users/user.model';
 @Component({
   selector: 'app-root',
   imports: [

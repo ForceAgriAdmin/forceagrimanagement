@@ -1,6 +1,11 @@
+import { Timestamp } from "@angular/fire/firestore";
+
 export interface TransactionModel {
-    timestamp: Date;
+    timestamp: Timestamp;
     amount: number;
     description: string;
-    operation: string;
+    operationId: string;
+    creatorId: string;
+    transactionTypeId: string;
+    workerId: string;
   }

@@ -15,6 +15,7 @@ import {
 } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
 import { IdentityCard } from '../models/workers/identitycard';
+import { SupervisorCard } from '../models/users/supervisorcard';
 
 @Injectable({
   providedIn: 'root'
@@ -94,6 +95,43 @@ export class CardService {
     return setDoc(cardRef, newCard);
   }
 
+  async addSupervisorCard(card: Omit<SupervisorCard, 'createdAt' | 'userId' | 'active' | 'number'>,userId: string): Promise<void> {
+    const cardsColl = collection(this.firestore, 'supervisorCards');
+    const cardRef = doc(cardsColl);
+
+    //update all existing worker cards to active = false
+    try
+    {
+      const q = query(cardsColl, where(userId, '==', userId));
+      const snap = await getDocs(q);
+
+      snap.forEach((documentSnapshot) => {
+        const docRef = doc(this.firestore, 'supervisorCards', documentSnapshot.id);
+        updateDoc(docRef, { active: false });
+      });
+
+
+      if (snap.empty) {
+        return;
+      }
+
+    } catch (error) {
+      return;
+    }
+    
+    const newCard: SupervisorCard = {
+      ...card,
+      userId: userId,
+      active: true,
+      number: this.createCardNumber(),
+      createdAt: serverTimestamp() as any
+    };
+
+
+   
+    return setDoc(cardRef, newCard);
+  }
+
 
   updateCard(id: string, changes: Partial<IdentityCard>): Promise<void> {
     const cardDoc = doc(this.firestore, `cards/${id}`);
@@ -133,6 +171,21 @@ export class CardService {
 
       const card = snap.docs[0].data() as IdentityCard;
       return card.active && card.workerId === workerId;
+    });
+  }
+
+  scanSupervisorCard(cardNumber: string, userId: string): Promise<boolean> {
+    return runInInjectionContext(this.injector, async () => {
+      const cardsColl = collection(this.firestore, 'supervisorCards');
+      const q = query(cardsColl, where('number', '==', cardNumber));
+      const snap = await getDocs(q);
+
+      if (snap.empty) {
+        return false;
+      }
+
+      const card = snap.docs[0].data() as SupervisorCard;
+      return card.active && card.userId === userId;
     });
   }
 

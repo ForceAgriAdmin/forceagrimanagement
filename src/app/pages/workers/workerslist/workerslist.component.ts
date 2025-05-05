@@ -23,8 +23,10 @@ import { CardService } from '../../../services/card.service';
 import { NotificationService } from '../../../services/notification.service';
 import { MessageModule } from '@syncfusion/ej2-angular-notifications'
 import { NotificationMessage } from '../../../models/layout/notificationmessage';
-import { timeout } from 'rxjs';
+import { Observable, timeout } from 'rxjs';
 import { AddWorkerTransactionComponent, AddWorkerTransactionDialogData } from '../../../dialogs/add-worker-transaction/add-worker-transaction.component';
+import { AuthService } from '../../../services/auth.service';
+import { UserProfile } from '../../../models/users/user.model';
 
 @Component({
   selector: 'app-workerslist',
@@ -51,15 +53,35 @@ export class WorkerslistComponent implements OnInit{
   filteredWorkers: WorkerModel[] = [];
   searchTerm: string = '';
   operationMap: { [id: string]: string } = {};
+  user$: Observable<any>;
+  
+    loggedInUser: UserProfile = {
+      uid: '',
+      email: '',
+      displayName: ''
+    };
   constructor(
       private workersService: WorkersService,
       private operationService: OperationService,
       private dialog: MatDialog,
       private router: Router,
       private cardService: CardService,
-      private notficationService: NotificationService) {}
+      private notficationService: NotificationService,
+      private authService: AuthService) {
+        this.user$ = this.authService.authState$;
+      }
 
   ngOnInit(): void {
+    this.authService.authState$.subscribe(user => {
+
+      if (!user) {
+        this.router.navigate(['/login']);
+      }
+
+      this.loggedInUser.email = user?.email || '';
+      this.loggedInUser.uid = user?.uid || '';
+
+    });
     this.workersService.getWorkers().subscribe((data: WorkerModel[]) => {
       this.workers = data;
       this.filteredWorkers = data; 
@@ -133,13 +155,29 @@ export class WorkerslistComponent implements OnInit{
               this.openAddTransactionDialog(worker);
               
           }
-          else{
-            this.message = {id: 'msg_error',severity:'Error',message:'Invalid Card!!!'};
+          else
+          {
+
+            this.cardService.scanSupervisorCard(result.cardNumber,this.loggedInUser.uid).then(supRessponse => {
+              if(supRessponse){
+                this.message = {id: 'msg_info',severity:'Info',message:'Supervisor Card Scan Successful'};
               this.notifications.push(this.message);
               setTimeout(() => {
                 console.log('Waited 3 seconds');
                 this.notifications.pop();
               }, 3000);
+                this.openAddTransactionDialog(worker);
+              } 
+              else{
+                //TODO: Create notification Alert
+                this.message = {id: 'msg_error',severity:'Error',message:'Invalid Card!!!'};
+                this.notifications.push(this.message);
+                setTimeout(() => {
+                  console.log('Waited 3 seconds');
+                  this.notifications.pop();
+                }, 3000);
+              }
+            });
           }
         });
       }
