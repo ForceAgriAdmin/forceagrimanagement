@@ -16,7 +16,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCardModule }      from '@angular/material/card';
 
 import { ActionToolbarComponent }   from '../../../components/general/action-toolbar/action-toolbar.component';
-import { TransactionListComponent } from '../../transactions/transaction-list/transaction-list.component';
+import { TransactionListComponent } from '../worker-transaction-list/worker-transaction-list.component';
 import { WorkerIdentityCardComponent } from '../worker-identity-card/worker-identity-card.component';
 import { WorkerTimelineComponent }  from '../worker-timeline/worker-timeline.component';
 import { WorkerDetailsCardComponent } from '../worker-details-card/worker-details-card.component';

@@ -21,7 +21,7 @@ export class WorkersComponent {
 
   cards: MenuItem[] = [
     { icon: 'list', label: 'List', route: '/workers/list' },
-    { icon: 'person_add', label: 'Add New', route: '/workers/add' },
+    { icon: 'person_add', label: 'New', route: '/workers/add' },
     { icon: 'summarize', label: 'Reports', route: '/workers/reports' }
   ];
 

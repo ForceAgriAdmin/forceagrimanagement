@@ -1,9 +1,13 @@
+<h1 *ngIf="!childActive" style="padding-left: 30px;">
+  Workers
+</h1>
 <div class="breadcrumb" *ngIf="childActive">
     <nav>
       <a routerLink="/workers" routerLinkActive="active">workers</a> /
       <span>list</span>
     </nav>
   </div>
+
   <ng-container *ngIf="!childActive">
     <div class="menu-card-list">
       <app-menucard *ngFor="let card of cards" [data]="card"></app-menucard>

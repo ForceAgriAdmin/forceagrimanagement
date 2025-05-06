@@ -1,38 +1,113 @@
+<h2>
+  <span>Transactions List</span>
+</h2>
+
+<ng-template ngFor let-item [ngForOf]="notifications" let-i="index">
+  <ejs-message id="{{ item.id }}" severity="{{ item.severity }}">{{
+    item.message
+  }}</ejs-message>
+  <br />
+  <br />
+</ng-template>
+<div class="search-toolbar">
+    <app-force-search
+      label="Search"
+      placeholder="Enter employee, farm or type…"
+      (searchChange)="filterTransactions($event)"
+      (cancel)="clearSearch()"
+    ></app-force-search>
+  
+    <app-force-button
+      label="Add Transaction"
+      icon="add"
+      (action)="onAddNewTransaction()"
+    ></app-force-button>
+  </div>
 <mat-card>
-  <ng-container *ngIf="transactions?.length; else emptyList">
-    <mat-card-header>
-      <mat-card-title>Transactions</mat-card-title>
-    </mat-card-header>
+  
     
-    <div class="tx-list">
-      <mat-card *ngFor="let tx of transactions" class="transaction-card">
-        <div class="transaction-content">
-          <div class="transaction-details">
-            <div class="description">{{ tx.description }}</div>
-            <div class="operation">{{ tx.operationId }}</div>
-          </div>
   
-          <div
-            class="amount"
-            [ngClass]="{ positive: tx.amount >= 0, negative: tx.amount < 0 }"
-          >
-            {{ tx.amount | number: '1.2-2' }}
-          </div>
+    <div class="table-container" *ngIf="!loading; else spinner">
+      <table
+        mat-table
+        [dataSource]="dataSource"
+        matSort
+        class="mat-elevation-z8"
+      >
   
-          <button
-            mat-icon-button
-            class="edit-button"
-            (click)="onEdit(tx)"
-            aria-label="Edit transaction"
-          >
-            <mat-icon>edit</mat-icon>
-          </button>
-        </div>
-      </mat-card>
+        <!-- Employee # -->
+        <ng-container matColumnDef="employeeNumber">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Employee #</th>
+          <td mat-cell *matCellDef="let r">{{ r.employeeNumber }}</td>
+        </ng-container>
+  
+        <!-- Operation -->
+        <ng-container matColumnDef="operationName">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Operation</th>
+          <td mat-cell *matCellDef="let r">{{ r.operationName }}</td>
+        </ng-container>
+  
+        <!-- Farm -->
+        <ng-container matColumnDef="farmName">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Farm</th>
+          <td mat-cell *matCellDef="let r">{{ r.farmName }}</td>
+        </ng-container>
+  
+        <!-- Type -->
+        <ng-container matColumnDef="transactionType">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Type</th>
+          <td mat-cell *matCellDef="let r">{{ r.transactionTypeName }}</td>
+        </ng-container>
+  
+        <!-- Amount -->
+        <ng-container matColumnDef="amount">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Amount</th>
+          <td mat-cell *matCellDef="let r">
+            <span [class.debit]="!r.isCredit" [class.credit]="r.isCredit">
+              {{ r.amount | number:'1.2-2' }}
+            </span>
+          </td>
+        </ng-container>
+  
+        <!-- Created -->
+        <ng-container matColumnDef="createdAt">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Created</th>
+          <td mat-cell *matCellDef="let r">{{ r.createdAt | date:'short' }}</td>
+        </ng-container>
+  
+        <!-- Modified -->
+        <ng-container matColumnDef="updatedAt">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Modified</th>
+          <td mat-cell *matCellDef="let r">{{ r.updatedAt | date:'short' }}</td>
+        </ng-container>
+  
+        <!-- Actions -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let r">
+            <button mat-icon-button (click)="edit(r)">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button mat-icon-button (click)="delete(r)">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+  
+        <tr mat-header-row   *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row          *matRowDef="let row; columns: displayedColumns"></tr>
+      </table>
+  
+      <mat-paginator
+        [pageSizeOptions]="[5, 10, 25]"
+        showFirstLastButtons
+      ></mat-paginator>
     </div>
-  </ng-container>
-  <ng-template #emptyList>
-    <p class="no-transactions">No transactions to display.</p>
-  </ng-template>
   
-</mat-card>
+    <ng-template #spinner>
+      <div class="spinner-container">
+        <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
+      </div>
+    </ng-template>
+  </mat-card>
+  

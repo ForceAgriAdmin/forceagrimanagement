@@ -5,6 +5,7 @@ import { TransactionsComponent } from './pages/transactions/transactions.compone
 import { WorkerslistComponent } from './pages/workers/workerslist/workerslist.component';
 import { LoginComponent } from './pages/auth/login/login.component';
 import { WorkerDetailComponent } from './pages/workers/worker-detail/worker-detail.component';
+import { TransactionListComponent } from './pages/transactions/transaction-list/transaction-list.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -28,5 +29,8 @@ export const routes: Routes = [
   {
     path: 'transactions',
     component: TransactionsComponent,
+    children: [
+      { path: 'list', component: TransactionListComponent },
+    ]
   },
 ];

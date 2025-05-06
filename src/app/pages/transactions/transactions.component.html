@@ -1,1 +1,15 @@
-<p>transactions works!</p>
+<h1 *ngIf="!childActive" style="padding-left: 30px;">
+    Transactions
+</h1>
+<div class="breadcrumb" *ngIf="childActive">
+    <nav>
+      <a routerLink="/transactions" routerLinkActive="active">transactions</a> /
+      <span>list</span>
+    </nav>
+  </div>
+  <ng-container *ngIf="!childActive">
+    <div class="menu-card-list">
+      <app-menucard *ngFor="let card of cards" [data]="card"></app-menucard>
+    </div>
+  </ng-container>
+  <router-outlet (activate)="onActivate($event)" (deactivate)="onDeactivate($event)"></router-outlet>

@@ -8,4 +8,6 @@ export interface TransactionModel {
     creatorId: string;
     transactionTypeId: string;
     workerId: string;
+    function:string;
+    multiWorkerId: string[];
   }

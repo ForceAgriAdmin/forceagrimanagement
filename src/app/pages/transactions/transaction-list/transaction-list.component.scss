@@ -1,75 +1,25 @@
-:host {
-  display: flex;
-  flex-direction: column;
-  /* fill parent height, or set a fixed px/vh if you prefer */
-  height: 100%;
-  width: 100%;
-  overflow-y: auto;    /* scroll once items exceed container */
-  padding: 8px 0;      /* optional top/bottom padding */
-}
-
-/* wrapper to stack cards */
-.tx-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;  
-  margin: 5px;         /* space between cards */
-}
-
-mat-card {
-  width: 100%;
-  height: 100%;
-  padding: 10px;          /* we use gap on the parent */
-          /* we use gap on the parent */
-  box-sizing: border-box;
-  background-color: var(--mat-sys-background) !important;
-}
-
-.transaction-card {
-  padding: 8px;
-
-  .transaction-content {
+/* transaction-list.component.scss */
+.table-container {
+    overflow: auto;
+  }
+  
+  .filter {
+    width: 300px;
+    margin-bottom: 1rem;
+  }
+  
+  .credit { color: green;  }
+  .debit  { color: red;    }
+  
+  .spinner-container {
     display: flex;
-    align-items: center;          /* center icon & text vertically */
-    justify-content: space-between;
+    justify-content: center;
+    padding: 2rem;
   }
-
-  .transaction-details {
-    flex: 1;
-
-    .description {
-      font-size: 14px;
-      font-weight: 500;
-      color: rgba(0, 0, 0, 0.87);
-    }
-
-    .operation {
-      font-size: 12px;
-      color: rgba(0, 0, 0, 0.6);
-    }
+  .search-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
   }
-
-  .amount {
-    font-size: 16px;
-    font-weight: bold;
-    margin: 0 16px;
-
-    &.positive {
-      color: #4caf50; // green
-    }
-
-    &.negative {
-      color: #f44336; // red
-    }
-  }
-
-  .edit-button {
-    /* keeps button at top of card if description wraps */
-    align-self: flex-start;
-  }
-}
-
-.no-transactions {
-  text-align: center;
-  color: rgba(0, 0, 0, 0.54);
-}
+  

@@ -1,0 +1,12 @@
+.menu-card-list {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem; // Space between cards
+    padding: 1rem;
+    overflow-x: auto; // Optional: allow horizontal scrolling on smaller screens
+  }
+
+  .breadcrumb nav a.active {
+    color: black ;  /* !important may be used if another style is overriding your settings */
+  }
+  

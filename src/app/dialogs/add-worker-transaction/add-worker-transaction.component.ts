@@ -50,7 +50,9 @@ export class AddWorkerTransactionComponent {
     operationId: '',   
     creatorId: '',        
     transactionTypeId: '',   
-    workerId: ''           
+    workerId: '',
+    function: 'single' ,
+    multiWorkerId: []          
   };
   user$: Observable<any>;
   
