@@ -99,24 +99,24 @@ export class AddTransactionComponent implements OnInit {
       .subscribe((list) => (this.workers = list));
 
     // when `function` changes, adjust validation on workerIds
-    this.transactionForm
-      .get("function")!
-      .valueChanges.subscribe((fn) => {
-        const w = this.transactionForm.get("workerIds")!;
-        if (fn === "payment-group") {
-          w.clearValidators();
-          w.setValue([]);
-        } else {
-          w.setValidators([Validators.required]);
-        }
-        w.updateValueAndValidity();
-      });
+    // this.transactionForm
+    //   .get("function")!
+    //   .valueChanges.subscribe((fn) => {
+    //     const w = this.transactionForm.get("workerIds")!;
+    //     if (fn === "payment-group") {
+    //       w.clearValidators();
+    //       w.setValue([]);
+    //     } else {
+    //       w.setValidators([Validators.required]);
+    //     }
+    //     w.updateValueAndValidity();
+    //   });
   }
 
   async onSubmit(): Promise<void> {
-    if (this.transactionForm.invalid) {
-      return;
-    }
+    // if (this.transactionForm.invalid) {
+    //   return;
+    // }
 
     const fn = this.transactionForm.value.function as "single" | "bulk" | "payment-group";
     // base transaction fields
