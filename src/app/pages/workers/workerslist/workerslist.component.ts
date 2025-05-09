@@ -26,7 +26,8 @@ import { NotificationMessage } from '../../../models/layout/notificationmessage'
 import { Observable, timeout } from 'rxjs';
 import { AddWorkerTransactionComponent, AddWorkerTransactionDialogData } from '../../../dialogs/add-worker-transaction/add-worker-transaction.component';
 import { AuthService } from '../../../services/auth.service';
-import { UserProfile } from '../../../models/users/user.model';
+import { AppUser } from '../../../models/users/user.model';
+import { Timestamp } from '@angular/fire/firestore';
 
 @Component({
   selector: 'app-workerslist',
@@ -55,10 +56,12 @@ export class WorkerslistComponent implements OnInit{
   operationMap: { [id: string]: string } = {};
   user$: Observable<any>;
   
-    loggedInUser: UserProfile = {
+    loggedInUser: AppUser = {
       uid: '',
       email: '',
-      displayName: ''
+      displayName: '',
+      createdAt: Timestamp.now(),
+      roles: []
     };
   constructor(
       private workersService: WorkersService,

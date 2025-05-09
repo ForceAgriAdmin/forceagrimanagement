@@ -26,7 +26,7 @@ import { WorkersService } from "../../services/workerservice.service";
 import { TransactionModel } from "../../models/transactions/transaction";
 import { TransactionTypeModel } from "../../models/transactions/transactiontype";
 import { WorkerModel } from "../../models/workers/worker";
-import { UserProfile } from "../../models/users/user.model";
+import { AppUser } from "../../models/users/user.model";
 import {
   AddWorkerTransactionComponent,
   AddWorkerTransactionDialogData,
@@ -52,7 +52,13 @@ export class AddTransactionComponent implements OnInit {
   transactionForm: FormGroup;
   transactionTypes: TransactionTypeModel[] = [];
   workers: WorkerModel[] = [];
-  loggedInUser: UserProfile = { uid: "", email: "", displayName: "" };
+  loggedInUser: AppUser = {
+      uid: '',
+      email: '',
+      displayName: '',
+      createdAt: Timestamp.now(),
+      roles:[]
+    };
 
   constructor(
     public dialogRef: MatDialogRef<AddWorkerTransactionComponent>,
@@ -76,17 +82,10 @@ export class AddTransactionComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // redirect if not logged in
     this.authService.authState$.subscribe((user) => {
       if (!user) {
         this.router.navigate(["/login"]);
-      } else {
-        this.loggedInUser = {
-          uid: user.uid,
-          email: user.email ?? "",
-          displayName: user.displayName ?? "",
-        };
-      }
+      } 
     });
 
     // load dropdown data

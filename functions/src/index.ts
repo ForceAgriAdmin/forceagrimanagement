@@ -3,7 +3,10 @@ import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import * as logger from "firebase-functions/logger";
 
 admin.initializeApp();
+
 const db = admin.firestore();
+
+
 
 export const onTransactionCreated = onDocumentCreated(
   "transactions/{txId}",

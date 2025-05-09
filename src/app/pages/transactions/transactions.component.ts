@@ -23,7 +23,6 @@ export class TransactionsComponent {
   cards: MenuItem[] = [
     { icon: 'list', label: 'List', route: '/transactions/list' },
     { icon: 'payments', label: 'New', route: '/transactions/add' },
-    { icon: 'payments', label: 'Bulk', route: '/transactions/add/bulk' },
     { icon: 'summarize', label: 'Reports', route: '/transactions/reports' }
   ];
 

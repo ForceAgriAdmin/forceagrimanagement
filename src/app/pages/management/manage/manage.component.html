@@ -1,0 +1,14 @@
+<h1 *ngIf="!childActive" style="padding-left: 30px;">
+    Management
+</h1>
+<div class="breadcrumb" *ngIf="childActive">
+    <nav>
+      <a routerLink="/manage" routerLinkActive="active">manage</a> /
+    </nav>
+  </div>
+  <ng-container *ngIf="!childActive">
+    <div class="menu-card-list">
+      <app-menucard *ngFor="let card of cards" [data]="card"></app-menucard>
+    </div>
+  </ng-container>
+  <router-outlet (activate)="onActivate($event)" (deactivate)="onDeactivate($event)"></router-outlet>

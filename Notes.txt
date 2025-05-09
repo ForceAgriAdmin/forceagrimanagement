@@ -1,0 +1,2 @@
+<button *appHasRole="'Admin'">Admin Panel</button>
+<button *appHasRole="['Admin','Manager']">Admin or Manager Panel</button>

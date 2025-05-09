@@ -16,7 +16,7 @@ import { TransactionTypeModel } from '../../models/transactions/transactiontype'
 import { TransactionsService } from '../../services/transactions.service';
 import { AuthService } from '../../services/auth.service';
 import { Observable } from 'rxjs';
-import { UserProfile } from '../../models/users/user.model';
+import { AppUser } from '../../models/users/user.model';
 import { Router, RouterModule } from '@angular/router';
 import { TransactionModel } from '../../models/transactions/transaction';
 import { Timestamp } from '@angular/fire/firestore';
@@ -56,10 +56,12 @@ export class AddWorkerTransactionComponent {
   };
   user$: Observable<any>;
   
-    loggedInUser: UserProfile = {
+    loggedInUser: AppUser = {
       uid: '',
       email: '',
-      displayName: ''
+      displayName: '',
+      createdAt: Timestamp.now(),
+      roles: []
     };
   constructor(
     public dialogRef: MatDialogRef<AddWorkerTransactionComponent>,

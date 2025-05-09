@@ -11,7 +11,8 @@ import { AuthService } from './services/auth.service';
 import { Observable } from 'rxjs';
 import { AngularFireModule } from '@angular/fire/compat';
 import { AngularFirestoreModule } from '@angular/fire/compat/firestore';
-import { UserProfile } from './models/users/user.model';
+import { AppUser } from './models/users/user.model';
+import { Timestamp } from '@angular/fire/firestore';
 @Component({
   selector: 'app-root',
   imports: [
@@ -34,15 +35,18 @@ export class AppComponent implements OnInit {
   menuItems: MenuItem[] = [
     { icon: 'dashboard', label: 'Dashboard', route: 'dashboard' },
     { icon: 'person', label: 'Workers', route: 'workers' },
-    { icon: 'money', label: 'Transaction', route: 'transactions' }
+    { icon: 'money', label: 'Transaction', route: 'transactions' },
+    {icon :'settings',label:'Manage',route: 'manage'}
   ];
   user$: Observable<any>;
 
-  loggedInUser: UserProfile = {
-    uid: '',
-    email: '',
-    displayName: ''
-  };
+   loggedInUser: AppUser = {
+        uid: '',
+        email: '',
+        displayName: '',
+        createdAt: Timestamp.now(),
+        roles: []
+      };
   constructor(private authService: AuthService, private router: Router) {
     this.user$ = this.authService.authState$;
   }
