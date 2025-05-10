@@ -33,29 +33,53 @@ export class OperationService {
     });
   }
 
-  addOperation(operation: Omit<OperationModel, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> {
-    const operationsCollection = collection(this.firestore, 'operations');
-    const operationDocRef = doc(operationsCollection);
-    const id = operationDocRef.id;
+  // addOperation(operation: Omit<OperationModel, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> {
+  //   const operationsCollection = collection(this.firestore, 'operations');
+  //   const operationDocRef = doc(operationsCollection);
+  //   const id = operationDocRef.id;
     
-    const newOperation: OperationModel = {
+  //   const newOperation: OperationModel = {
+  //     id,
+  //     ...operation,
+  //     createdAt: serverTimestamp() as any,
+  //     updatedAt: serverTimestamp() as any,
+  //   };
+    
+  //   return setDoc(operationDocRef, newOperation);
+  // }
+
+   addOperation(
+    operation: Omit<OperationModel, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<OperationModel> {
+    const col = collection(this.firestore, 'operations');
+    const ref = doc(col);
+    const id = ref.id;
+    const newOp: OperationModel = {
       id,
       ...operation,
       createdAt: serverTimestamp() as any,
-      updatedAt: serverTimestamp() as any,
-    };
-    
-    return setDoc(operationDocRef, newOperation);
-  }
-
-  updateOperation(operation: Partial<OperationModel> & { id: string }): Promise<void> {
-    const operationDoc = doc(this.firestore, `operations/${operation.id}`);
-    const updateData = {
-      ...operation,
       updatedAt: serverTimestamp() as any
     };
-    return updateDoc(operationDoc, updateData);
+    return setDoc(ref, newOp).then(() => newOp);
   }
+
+  updateOperation(
+    op: Partial<OperationModel> & { id: string }
+  ): Promise<void> {
+    const ref = doc(this.firestore, `operations/${op.id}`);
+    return updateDoc(ref, {
+      ...op,
+      updatedAt: serverTimestamp() as any
+    });
+  }
+  // updateOperation(operation: Partial<OperationModel> & { id: string }): Promise<void> {
+  //   const operationDoc = doc(this.firestore, `operations/${operation.id}`);
+  //   const updateData = {
+  //     ...operation,
+  //     updatedAt: serverTimestamp() as any
+  //   };
+  //   return updateDoc(operationDoc, updateData);
+  // }
 
   deleteOperation(id: string): Promise<void> {
     const operationDoc = doc(this.firestore, `operations/${id}`);

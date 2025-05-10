@@ -45,6 +45,7 @@ export class AppComponent implements OnInit {
         email: '',
         displayName: '',
         createdAt: Timestamp.now(),
+        farmId: '',
         roles: []
       };
   constructor(private authService: AuthService, private router: Router) {

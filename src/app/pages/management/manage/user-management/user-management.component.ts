@@ -82,6 +82,7 @@ notifications: { id: string; severity: string; message: string }[] = [];
         uid: u.uid,
         email: u.email,
         displayName: u.displayName,
+        farmId: u.farmId ? u.farmId : 'LRXY7Su8v0ga6U8OwxJT',
         createdAt: (u.createdAt as any)?.toDate() ?? new Date(),
         roles: Array.isArray(u.roles) ? u.roles : ['User'],
       }));
@@ -118,6 +119,7 @@ notifications: { id: string; severity: string; message: string }[] = [];
             email: result.email,
             displayName: result.displayName,
             createdAt: result.createdAt,
+            farmId: result.farmId,
             roles: result.roles
           },
           ...this.dataSource.data

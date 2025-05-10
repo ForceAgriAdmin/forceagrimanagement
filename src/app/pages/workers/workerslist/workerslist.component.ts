@@ -56,13 +56,14 @@ export class WorkerslistComponent implements OnInit{
   operationMap: { [id: string]: string } = {};
   user$: Observable<any>;
   
-    loggedInUser: AppUser = {
-      uid: '',
-      email: '',
-      displayName: '',
-      createdAt: Timestamp.now(),
-      roles: []
-    };
+   loggedInUser: AppUser = {
+        uid: '',
+        email: '',
+        displayName: '',
+        createdAt: Timestamp.now(),
+        farmId: '',
+        roles: []
+      };
   constructor(
       private workersService: WorkersService,
       private operationService: OperationService,

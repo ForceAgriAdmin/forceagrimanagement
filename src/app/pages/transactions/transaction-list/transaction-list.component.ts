@@ -90,6 +90,50 @@ export class TransactionListComponent implements OnInit {
     private dialog: MatDialog
   ) {}
 
+  // ngOnInit() {
+  //   this.dataSource.filterPredicate = (row: TransactionView, filter: string) => {
+  //     const haystack = [
+  //       row.employeeNumber,
+  //       row.operationName,
+  //       row.farmName,
+  //       row.transactionTypeName
+  //     ].join(' ').toLowerCase();
+  //     return haystack.includes(filter);
+  //   };
+
+  //   combineLatest([
+  //     this.ts.getTransactions(),
+  //     this.ws.getWorkers(),
+  //     this.ts.getTransactionTypes(),
+  //     this.ops.getOperations(),
+  //     this.fs.getFarms()
+  //   ]).subscribe(([txs, workers, ttList, opsList, farms]) => {
+  //     const view = txs.map(tx => {
+  //       const w = workers.find(w => w.id === tx.workerId)!;
+  //       const tt = ttList.find(t => t.id === tx.transactionTypeId)!;
+  //       const op = opsList.find(o => o.id === tx.operationId)!;
+  //       const f = farms.find(f => f.id === w.farmId)!;
+
+  //       return {
+  //         employeeNumber: w.employeeNumber,
+  //         operationName: op.name,
+  //         farmName: f.name,
+  //         transactionTypeName: tt.name,
+  //         isCredit: tt.isCredit,
+  //         amount: tx.amount,
+  //         createdAt: tx.timestamp.toDate(),
+  //         updatedAt: (tx as any).updatedAt?.toDate() || tx.timestamp.toDate(),
+  //         _raw: tx
+  //       } as TransactionView;
+  //     });
+
+  //     this.dataSource.data = view;
+  //     this.dataSource.sort = this.sort;
+  //     this.dataSource.paginator = this.paginator;
+  //     this.loading = false;
+  //   });
+  // }
+
   ngOnInit() {
     this.dataSource.filterPredicate = (row: TransactionView, filter: string) => {
       const haystack = [
@@ -102,36 +146,54 @@ export class TransactionListComponent implements OnInit {
     };
 
     combineLatest([
-      this.ts.getTransactions(),
-      this.ws.getWorkers(),
-      this.ts.getTransactionTypes(),
-      this.ops.getOperations(),
-      this.fs.getFarms()
-    ]).subscribe(([txs, workers, ttList, opsList, farms]) => {
-      const view = txs.map(tx => {
-        const w = workers.find(w => w.id === tx.workerId)!;
-        const tt = ttList.find(t => t.id === tx.transactionTypeId)!;
-        const op = opsList.find(o => o.id === tx.operationId)!;
-        const f = farms.find(f => f.id === w.farmId)!;
+  this.ts.getTransactions(),
+  this.ws.getWorkers(),
+  this.ts.getTransactionTypes(),
+  this.ops.getOperations(),
+  this.fs.getFarms()
+]).subscribe(([txs, workers, ttList, opsList, farms]) => {
+  const view: TransactionView[] = [];
 
-        return {
-          employeeNumber: w.employeeNumber,
-          operationName: op.name,
-          farmName: f.name,
+  txs.forEach(tx => {
+    // 1) Determine all worker IDs for this transaction:
+    const workerIds = Array.isArray((tx as any).multiWorkerId) && (tx as any).multiWorkerId.length
+      ? (tx as any).multiWorkerId
+      : [tx.workerId];
+
+    workerIds.forEach((wid: string) => {
+      const w  = workers.find(w => w.id === wid);
+      const tt = ttList.find(t => t.id === tx.transactionTypeId);
+      const op = opsList.find(o => o.id === tx.operationId);
+      const f  = w && farms.find(f => f.id === w.farmId);
+
+      // we still require at least worker & transactionType
+      if (w && tt) {
+        // decide operation name: real op or fallback to tx.function
+        const opName = op?.name
+          ?? ((tx as any).function
+            ? ((tx as any).function.charAt(0).toUpperCase() + (tx as any).function.slice(1))
+            : '—');
+
+        view.push({
+          employeeNumber:      w.employeeNumber,
+          operationName:       opName,
+          farmName:            f?.name ?? '—',
           transactionTypeName: tt.name,
-          isCredit: tt.isCredit,
-          amount: tx.amount,
-          createdAt: tx.timestamp.toDate(),
-          updatedAt: (tx as any).updatedAt?.toDate() || tx.timestamp.toDate(),
-          _raw: tx
-        } as TransactionView;
-      });
-
-      this.dataSource.data = view;
-      this.dataSource.sort = this.sort;
-      this.dataSource.paginator = this.paginator;
-      this.loading = false;
+          isCredit:            tt.isCredit,
+          amount:              tx.amount,
+          createdAt:           tx.timestamp.toDate(),
+          updatedAt:          ((tx as any).updatedAt?.toDate()) || tx.timestamp.toDate(),
+          _raw:                tx
+        });
+      }
     });
+  });
+
+  this.dataSource.data = view;
+  this.dataSource.sort = this.sort;
+  this.dataSource.paginator = this.paginator;
+  this.loading = false;
+});
   }
 
   filterTransactions(term: string) {

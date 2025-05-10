@@ -57,12 +57,13 @@ export class AddWorkerTransactionComponent {
   user$: Observable<any>;
   
     loggedInUser: AppUser = {
-      uid: '',
-      email: '',
-      displayName: '',
-      createdAt: Timestamp.now(),
-      roles: []
-    };
+        uid: '',
+        email: '',
+        displayName: '',
+        createdAt: Timestamp.now(),
+        farmId: '',
+        roles: []
+      };
   constructor(
     public dialogRef: MatDialogRef<AddWorkerTransactionComponent>,
     @Inject(MAT_DIALOG_DATA) public data: AddWorkerTransactionDialogData,

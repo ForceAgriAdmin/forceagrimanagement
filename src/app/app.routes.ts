@@ -12,6 +12,7 @@ import { WorkerManagementComponent } from './pages/management/manage/worker-mana
 import { TransactionManagementComponent } from './pages/management/manage/transaction-management/transaction-management.component';
 import { PaymentgroupManagementComponent } from './pages/management/manage/paymentgroup-management/paymentgroup-management.component';
 import { ReportManagementComponent } from './pages/management/manage/report-management/report-management.component';
+import { OperationManagementComponent } from './pages/management/manage/operation-management/operation-management.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -48,6 +49,7 @@ export const routes: Routes = [
       { path: 'transactions', component: TransactionManagementComponent },
       { path: 'payment-groups', component: PaymentgroupManagementComponent },
       { path: 'reports', component: ReportManagementComponent },
+      { path: 'operations', component: OperationManagementComponent },
 
     ],
   }

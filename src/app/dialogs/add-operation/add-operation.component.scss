@@ -1,0 +1,10 @@
+/* src/app/dialogs/add-operation/add-operation.component.scss */
+.full-width {
+  width: 100%;
+}
+
+mat-dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}

@@ -16,19 +16,26 @@ import {
   MatDialogModule,
   MatDialogRef
 } from '@angular/material/dialog';
+import { MatIconModule }          from '@angular/material/icon';
+import { MatFormFieldModule }     from '@angular/material/form-field';
+import { MatInputModule }         from '@angular/material/input';
+import { MatSelectModule }        from '@angular/material/select';
+import { MatButtonModule }        from '@angular/material/button';
 
-import {
-  MatIconModule
-} from '@angular/material/icon';
-import { MatFormFieldModule }  from '@angular/material/form-field';
-import { MatInputModule }      from '@angular/material/input';
-import { MatSelectModule }     from '@angular/material/select';
-import { MatButtonModule }     from '@angular/material/button';
-import { AppReport } from '../../models/reports/appreport';
-import { ReportsService } from '../../services/report.service';
-import { Association } from '../../models/reports/association';
+import { AppReport }              from '../../models/reports/appreport';
+import { ReportsService }         from '../../services/report.service';
+import { Association }            from '../../models/reports/association';
 
-// restricted set of associations
+// always-include these transaction fields first:
+const BASE_TRANSACTION_FIELDS = [
+  { key: 'amount',       label: 'Amount' },
+  { key: 'description',  label: 'Description' },
+  { key: 'function',     label: 'Function' },
+  { key: 'transactionTypeId', label: 'Transaction Type' },
+  { key: 'operationId',       label: 'Operation Name' }
+];
+
+// only these five associations allowed
 const ALL_ASSOCIATIONS: Association[] = [
   'Workers',
   'Operations',
@@ -37,27 +44,31 @@ const ALL_ASSOCIATIONS: Association[] = [
   'PaymentGroup'
 ];
 
-// only transaction‐based fields available to return
-const PROPERTY_MAP: Record<
-  Association,
-  { key: string; label: string }[]
-> = {
+/**
+ * Only human-readable, non-ID fields here.
+ * (we never add raw IDs as report columns)
+ */
+const PROPERTY_MAP: Record<Association, { key: string; label: string }[]> = {
   Workers: [
-    { key: 'workerId',    label: 'Worker ID' },
-    { key: 'creatorId',   label: 'Creator ID' }
+    { key: 'firstName',      label: 'First Name' },
+    { key: 'lastName',       label: 'Last Name' },
+    { key: 'idNumber',       label: 'ID Number' },
+    { key: 'employeeNumber', label: 'Employee #' }
   ],
   Operations: [
-    { key: 'operationId', label: 'Operation ID' }
+    { key: 'name',        label: 'Operation Name' },
+    { key: 'description', label: 'Operation Description' }
   ],
   WorkerType: [
-    { key: 'workerTypeId', label: 'Worker Type ID' }
+    { key: 'description', label: 'Worker Type Description' }
   ],
   TransactionType: [
-    { key: 'transactionTypeId', label: 'Transaction Type ID' }
+    { key: 'name',        label: 'Transaction Type' },
+    { key: 'description', label: 'Type Description' },
+    { key: 'isCredit',    label: 'Is Credit?' }
   ],
   PaymentGroup: [
-    // paymentGroup itself isn’t on the transaction, we’ll filter by workerId membership
-    // but not expose as a return field here
+    { key: 'description', label: 'Group Description' }
   ]
 };
 
@@ -81,7 +92,7 @@ export class AddReportComponent implements OnInit {
   form!: FormGroup;
   ALL_ASSOCIATIONS = ALL_ASSOCIATIONS;
   availableProperties: { key: string; label: string }[] = [];
-end: "center"|"start"|"end"|undefined;
+  end: 'center' | 'start' | 'end' | undefined;
 
   constructor(
     private fb: FormBuilder,
@@ -105,25 +116,37 @@ end: "center"|"start"|"end"|undefined;
       )
     });
 
-    // initialize the property dropdown
+    // seed availableProperties with base + any existing associations
     this.updateProps(this.form.value.associations);
 
-    // whenever associations change, update props and prune invalid fields
-    this.form.get('associations')!.valueChanges.subscribe((assocs: Association[]) => {
-      this.updateProps(assocs);
-      const valid = this.availableProperties.map(p => p.key);
-      const arr = this.fieldsArray;
-      for (let i = arr.length - 1; i >= 0; i--) {
-        const k = arr.at(i).get('key')!.value;
-        if (!valid.includes(k)) arr.removeAt(i);
-      }
-    });
+    // when associations change, recompute & prune
+    this.form.get('associations')!.valueChanges
+      .subscribe((assocs: Association[]) => {
+        this.updateProps(assocs);
+        const valid = this.availableProperties.map(p => p.key);
+        const arr = this.fieldsArray;
+        for (let i = arr.length - 1; i >= 0; i--) {
+          if (!valid.includes(arr.at(i).get('key')!.value)) {
+            arr.removeAt(i);
+          }
+        }
+      });
   }
 
   private updateProps(assocs: Association[]) {
-    this.availableProperties = assocs
-      .flatMap(a => PROPERTY_MAP[a] || [])
-      .reduce((acc, cur) => acc.find((x: { key: string; }) => x.key === cur.key) ? acc : [...acc, cur], [] as any);
+    // start with the transaction basics
+    const combined = [...BASE_TRANSACTION_FIELDS];
+
+    // then append any association-specific props
+    assocs.forEach(a => {
+      (PROPERTY_MAP[a] || []).forEach(p => {
+        if (!combined.find(x => x.key === p.key)) {
+          combined.push(p);
+        }
+      });
+    });
+
+    this.availableProperties = combined;
   }
 
   get fieldsArray(): FormArray {
@@ -132,7 +155,10 @@ end: "center"|"start"|"end"|undefined;
 
   addField() {
     this.fieldsArray.push(
-      this.fb.group({ key: ['', Validators.required], label: ['', Validators.required] })
+      this.fb.group({
+        key:   ['', Validators.required],
+        label: ['', Validators.required]
+      })
     );
   }
 
@@ -143,12 +169,14 @@ end: "center"|"start"|"end"|undefined;
   save() {
     if (this.form.invalid) return;
     const v = this.form.value;
+
     const payload: Omit<AppReport, 'id' | 'createdAt' | 'updatedAt'> = {
       name:         v.name,
       description:  v.description,
       associations: v.associations,
       fields:       v.fields
     };
+
     const obs = this.data
       ? this.svc.updateReport(this.data.id, payload)
       : this.svc.createReport(payload);

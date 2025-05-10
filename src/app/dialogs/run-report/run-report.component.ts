@@ -28,8 +28,8 @@ import { FarmService }            from '../../services/farm.service';
 import { PaymentGroupService }    from '../../services/payment-group.service';
 
 import * as XLSX from 'xlsx';
-import { AppReport } from '../../models/reports/appreport';
-import { Association } from '../../models/reports/association';
+import { AppReport }              from '../../models/reports/appreport';
+import { Association }           from '../../models/reports/association';
 
 @Component({
   selector: 'app-run-report',
@@ -50,9 +50,8 @@ import { Association } from '../../models/reports/association';
 })
 export class RunReportComponent implements OnInit {
   form!: FormGroup;
-  dataRows: any[] = [];
 
-  // lookups for each assoc
+  // lookups for each association
   lookup: Record<Association, any[]> = {
     Workers: [],
     Operations: [],
@@ -85,27 +84,34 @@ end: "center"|"start"|"end"|undefined;
     this.report.associations.forEach(a => this.form.addControl(a, this.fb.control([])));
 
     // preload lookups
-    if (this.report.associations.includes('Workers'))
+    if (this.report.associations.includes('Workers')) {
       this.ws.getWorkers().subscribe(r => (this.lookup.Workers = r));
-    if (this.report.associations.includes('Operations'))
+    }
+    if (this.report.associations.includes('Operations')) {
       this.ops.getOperations().subscribe(r => (this.lookup.Operations = r));
-    if (this.report.associations.includes('WorkerType'))
+    }
+    if (this.report.associations.includes('WorkerType')) {
       this.ws.getWorkerTypes!().subscribe(r => (this.lookup.WorkerType = r));
-    if (this.report.associations.includes('TransactionType'))
+    }
+    if (this.report.associations.includes('TransactionType')) {
       this.ts.getTransactionTypes().subscribe(r => (this.lookup.TransactionType = r));
-    if (this.report.associations.includes('PaymentGroup'))
+    }
+    if (this.report.associations.includes('PaymentGroup')) {
       this.pgs.getGroups().subscribe(r => (this.lookup.PaymentGroup = r));
+    }
   }
 
-  run() {
+  /** core filtering logic shared by both exports */
+  private getFilteredRows() {
+    let rows = [] as any[];
     this.ts.getTransactions().subscribe(all => {
       // date filter
-      let rows = all.filter(t => {
+      rows = all.filter(t => {
         const d = t.timestamp.toDate();
         return d >= this.form.value.from && d <= this.form.value.to;
       });
 
-      // each assoc narrows the tx set
+      // association filters
       this.report.associations.forEach((a: Association) => {
         const sel: string[] = this.form.value[a] || [];
         if (!sel.length) return;
@@ -117,7 +123,6 @@ end: "center"|"start"|"end"|undefined;
             rows = rows.filter(r => sel.includes(r.operationId));
             break;
           case 'WorkerType':
-            // assume WorkerModel has 'workerTypeId'
             rows = rows.filter(r => {
               const w = this.lookup.Workers.find(x => x.id === r.workerId);
               return w && sel.includes(w.workerTypeId);
@@ -127,34 +132,37 @@ end: "center"|"start"|"end"|undefined;
             rows = rows.filter(r => sel.includes(r.transactionTypeId));
             break;
           case 'PaymentGroup':
-            // union of all selected group.workerIds
-            const allIds = sel
-              .flatMap(gid => this.lookup.PaymentGroup.find(g => g.id === gid)?.workerIds || []);
+            const allIds = sel.flatMap(gid =>
+              this.lookup.PaymentGroup.find(g => g.id === gid)?.workerIds || []
+            );
             rows = rows.filter(r => allIds.includes(r.workerId));
             break;
         }
       });
-
-      // project to chosen fields
-      this.dataRows = rows.map(r => {
-        const out: any = {};
-        this.report.fields.forEach(f => (out[f.label] = (r as any)[f.key]));
-        return out;
-      });
+    });
+    return rows.map(r => {
+      const out: any = {};
+      this.report.fields.forEach(f => (out[f.label] = (r as any)[f.key]));
+      return out;
     });
   }
 
   exportPDF() {
+    const data = this.getFilteredRows();
     const w = window.open('', '_blank')!;
     w.document.write(`
       <h1>${this.report.name}</h1>
       <p>From: ${this.form.value.from.toLocaleDateString()} 
          To: ${this.form.value.to.toLocaleDateString()}</p>
       <table border="1" cellpadding="4">
-        <thead><tr>${this.report.fields.map(f => `<th>${f.label}</th>`).join('')}</tr></thead>
-        <tbody>${this.dataRows.map(row =>
-          `<tr>${this.report.fields.map(f => `<td>${row[f.label]||''}</td>`).join('')}</tr>`
-        ).join('')}</tbody>
+        <thead><tr>${this.report.fields
+          .map(f => `<th>${f.label}</th>`)
+          .join('')}</tr></thead>
+        <tbody>${data
+          .map(row => `<tr>${this.report.fields
+            .map(f => `<td>${row[f.label] || ''}</td>`)
+            .join('')}</tr>`)
+          .join('')}</tbody>
       </table>
     `);
     w.document.close();
@@ -162,7 +170,8 @@ end: "center"|"start"|"end"|undefined;
   }
 
   exportExcel() {
-    const ws: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.dataRows);
+    const data = this.getFilteredRows();
+    const ws: XLSX.WorkSheet = XLSX.utils.json_to_sheet(data);
     const wb: XLSX.WorkBook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, this.report.name);
     XLSX.writeFile(wb, `${this.report.name}.xlsx`);

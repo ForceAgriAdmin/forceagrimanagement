@@ -5,5 +5,6 @@ export interface AppUser {
     email: string;
     displayName: string;
     createdAt: Timestamp;
+    farmId:string;
     roles: string[];
   }

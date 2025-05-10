@@ -1,3 +1,4 @@
+// src/app/dialogs/add-transaction/add-transaction.component.ts
 import { Component, Inject, OnInit } from "@angular/core";
 import {
   FormBuilder,
@@ -6,31 +7,27 @@ import {
   Validators,
 } from "@angular/forms";
 import { Timestamp } from "@angular/fire/firestore";
-import { Observable } from "rxjs";
 import { Router, RouterModule } from "@angular/router";
 import {
   MAT_DIALOG_DATA,
   MatDialogModule,
   MatDialogRef,
 } from "@angular/material/dialog";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatInputModule } from "@angular/material/input";
-import { MatSelectModule } from "@angular/material/select";
-import { MatButtonModule } from "@angular/material/button";
 import { CommonModule } from "@angular/common";
+import { MatFormFieldModule }  from "@angular/material/form-field";
+import { MatInputModule }      from "@angular/material/input";
+import { MatSelectModule }     from "@angular/material/select";
+import { MatButtonModule }     from "@angular/material/button";
 
-import { TransactionsService } from "../../services/transactions.service";
-import { AuthService } from "../../services/auth.service";
-import { WorkersService } from "../../services/workerservice.service";
+import { TransactionsService }   from "../../services/transactions.service";
+import { AuthService }           from "../../services/auth.service";
+import { WorkersService }        from "../../services/workerservice.service";
+import { PaymentGroupRecord, PaymentGroupService }   from "../../services/payment-group.service";
 
-import { TransactionModel } from "../../models/transactions/transaction";
-import { TransactionTypeModel } from "../../models/transactions/transactiontype";
-import { WorkerModel } from "../../models/workers/worker";
-import { AppUser } from "../../models/users/user.model";
-import {
-  AddWorkerTransactionComponent,
-  AddWorkerTransactionDialogData,
-} from "../add-worker-transaction/add-worker-transaction.component";
+import { TransactionModel }      from "../../models/transactions/transaction";
+import { TransactionTypeModel }  from "../../models/transactions/transactiontype";
+import { WorkerModel }           from "../../models/workers/worker";
+import { AppUser }               from "../../models/users/user.model";
 
 @Component({
   selector: "app-add-transaction",
@@ -52,114 +49,125 @@ export class AddTransactionComponent implements OnInit {
   transactionForm: FormGroup;
   transactionTypes: TransactionTypeModel[] = [];
   workers: WorkerModel[] = [];
+  paymentGroups: PaymentGroupRecord[] = [];
   loggedInUser: AppUser = {
-      uid: '',
-      email: '',
-      displayName: '',
-      createdAt: Timestamp.now(),
-      roles:[]
-    };
+    uid: "",
+    email: "",
+    displayName: "",
+    createdAt: Timestamp.now(),
+    farmId: "",
+    roles: []
+  };
 
   constructor(
-    public dialogRef: MatDialogRef<AddWorkerTransactionComponent>,
-    @Inject(MAT_DIALOG_DATA)
-    public data: AddWorkerTransactionDialogData,
+    public dialogRef: MatDialogRef<AddTransactionComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: any,
     private fb: FormBuilder,
     private transactionService: TransactionsService,
     private authService: AuthService,
     private router: Router,
-    private workersService: WorkersService
+    private workersService: WorkersService,
+    private pgService: PaymentGroupService
   ) {
-    // Note: using control name `function` to match your model
     this.transactionForm = this.fb.group({
-      function: ["single", Validators.required],
-      operationId: ["", Validators.required],
-      workerIds: [[], Validators.required],            // will hold either [one] or [many]
-      transactionTypeId: ["", Validators.required],
-      description: ["", Validators.required],
-      amount: ["", [Validators.required, Validators.min(0.01)]],
+      function:            ["single", Validators.required],
+      operationId:         ["", Validators.required],
+      workerIds:           [[], Validators.required],
+      paymentGroupId:      [""],             // <— new control
+      transactionTypeId:   ["", Validators.required],
+      description:         ["", Validators.required],
+      amount:              ["", [Validators.required, Validators.min(0.01)]],
     });
   }
 
   ngOnInit(): void {
-    this.authService.authState$.subscribe((user) => {
+   this.authService.currentUserDoc$.subscribe(user => {
       if (!user) {
-        this.router.navigate(["/login"]);
-      } 
+        this.router.navigate(['/login']);
+      } else {
+        this.loggedInUser = user;
+      }
     });
 
     // load dropdown data
     this.transactionService
       .getTransactionTypes()
-      .subscribe((types) => (this.transactionTypes = types));
+      .subscribe(types => (this.transactionTypes = types));
 
     this.workersService
       .getWorkers()
-      .subscribe((list) => (this.workers = list));
+      .subscribe(ws => (this.workers = ws));
 
-    // when `function` changes, adjust validation on workerIds
-    // this.transactionForm
-    //   .get("function")!
-    //   .valueChanges.subscribe((fn) => {
-    //     const w = this.transactionForm.get("workerIds")!;
-    //     if (fn === "payment-group") {
-    //       w.clearValidators();
-    //       w.setValue([]);
-    //     } else {
-    //       w.setValidators([Validators.required]);
-    //     }
-    //     w.updateValueAndValidity();
-    //   });
+    this.pgService
+      .getGroups()
+      .subscribe(pg => (this.paymentGroups = pg));
+
+    // adjust validations when function changes
+    this.transactionForm.get("function")!.valueChanges.subscribe(fn => {
+      const wCtrl = this.transactionForm.get("workerIds")!;
+      const pgCtrl = this.transactionForm.get("paymentGroupId")!;
+
+      if (fn === "bulk") {
+        wCtrl.setValidators([Validators.required]);
+        pgCtrl.clearValidators();
+      } else if (fn === "payment-group") {
+        wCtrl.clearValidators();
+        pgCtrl.setValidators([Validators.required]);
+      } else {
+        // single
+        wCtrl.setValidators([Validators.required]);
+        pgCtrl.clearValidators();
+      }
+      wCtrl.updateValueAndValidity();
+      pgCtrl.updateValueAndValidity();
+    });
   }
 
   async onSubmit(): Promise<void> {
-    // if (this.transactionForm.invalid) {
-    //   return;
-    // }
+    if (this.transactionForm.invalid) return;
 
-    const fn = this.transactionForm.value.function as "single" | "bulk" | "payment-group";
-    // base transaction fields
+    const fn = this.transactionForm.value.function as
+      | "single"
+      | "bulk"
+      | "payment-group";
+
     const baseTx: Omit<TransactionModel, "workerId" | "multiWorkerId"> = {
-      timestamp:        Timestamp.now(),
-      amount:           Number(this.transactionForm.value.amount),
-      description:      this.transactionForm.value.description,
-      transactionTypeId:this.transactionForm.value.transactionTypeId,
-      creatorId:        this.loggedInUser.uid,
-      operationId:      this.transactionForm.value.operationId,
-      function:         fn,
+      timestamp:         Timestamp.now(),
+      amount:            +this.transactionForm.value.amount,
+      description:       this.transactionForm.value.description,
+      transactionTypeId: this.transactionForm.value.transactionTypeId,
+      creatorId:         this.loggedInUser.uid,
+      operationId:       this.transactionForm.value.operationId,
+      function:          fn,
     };
 
-    // build the final payload
     const tx: TransactionModel = {
       ...baseTx,
-      workerId: "",              // set below for single
-      multiWorkerId: [],         // set below for bulk
+      workerId:      "",
+      multiWorkerId: [],
     };
 
     if (fn === "single") {
-      // expect exactly one selection in the array
       const arr = this.transactionForm.value.workerIds as string[];
       tx.workerId = arr[0];
-      tx.multiWorkerId = [];
     } else if (fn === "bulk") {
       tx.multiWorkerId = this.transactionForm.value.workerIds as string[];
-      tx.workerId = "";
     } else {
       // payment-group
-      tx.workerId = "";
-      tx.multiWorkerId = [];
+      const pgId = this.transactionForm.value.paymentGroupId as string;
+      const group = this.paymentGroups.find(g => g.id === pgId);
+      tx.multiWorkerId = group ? group.workerIds : [];
     }
 
     try {
       await this.transactionService.createTransaction(tx);
-      this.dialogRef.close();
+      this.dialogRef.close(true);
     } catch (err) {
       console.error("Create Transaction failed", err);
-      // TODO: show user-friendly error
     }
   }
 
   onCancel(): void {
-    this.dialogRef.close();
+    this.dialogRef.close(false);
   }
 }
