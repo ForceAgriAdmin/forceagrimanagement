@@ -23,6 +23,7 @@
     "@ngrx/effects": "^19.1.0",
     "@ngrx/store": "^19.1.0",
     "@syncfusion/ej2-angular-barcode-generator": "^29.1.39",
+    "@syncfusion/ej2-angular-dropdowns": "^29.1.41",
     "@syncfusion/ej2-angular-layouts": "^29.1.39",
     "@syncfusion/ej2-angular-navigations": "^29.1.38",
     "@syncfusion/ej2-angular-notifications": "^29.1.33",

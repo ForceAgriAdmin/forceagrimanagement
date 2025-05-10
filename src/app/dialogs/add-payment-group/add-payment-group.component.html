@@ -1,0 +1,43 @@
+<!-- src/app/dialogs/add-payment-group/add-payment-group.component.html -->
+<h2 mat-dialog-title>
+  {{ isEdit ? 'Edit' : 'Add' }} Payment Group
+</h2>
+
+<form [formGroup]="groupForm" (ngSubmit)="save()">
+  <mat-dialog-content>
+    <!-- Description Field -->
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Description</mat-label>
+      <input matInput formControlName="description" />
+      <mat-error *ngIf="groupForm.get('description')?.hasError('required')">
+        Description is required
+      </mat-error>
+    </mat-form-field>
+
+    <!-- Searchable Multi-Select -->
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Workers</mat-label>
+      <mat-select
+        formControlName="workerIds"
+        multiple
+        (openedChange)="onSelectOpened($event)"
+      >
+      
+        <!-- 3) Filtered worker list -->
+        <mat-option
+          *ngFor="let w of filteredWorkers"
+          [value]="w.id"
+        >
+          {{ w.firstName }} {{ w.lastName }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+  </mat-dialog-content>
+
+  <mat-dialog-actions [align]="end">
+    <button mat-button (click)="cancel()">Cancel</button>
+    <button mat-button color="primary" [disabled]="groupForm.invalid">
+      {{ isEdit ? 'Update' : 'Create' }}
+    </button>
+  </mat-dialog-actions>
+</form>
