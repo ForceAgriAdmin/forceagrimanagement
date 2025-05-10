@@ -21,8 +21,8 @@ childActive: boolean = false;
 
   cards: MenuItem[] = [
     { icon: 'people_add', label: 'Users', route: '/manage/users' },
-    { icon: 'people', label: 'Workers', route: '/manage/workers' },
-    { icon: 'payments', label: 'Transactions', route: '/manage/transactions' },
+    { icon: 'people', label: 'Worker Types', route: '/manage/workers' },
+    { icon: 'payments', label: 'Transaction Types', route: '/manage/transactions' },
     { icon: 'people_group', label: 'Payment Groups', route: '/manage/payment-groups' },
     { icon: 'summarize', label: 'Reports', route: '/manage/reports' }
   ];

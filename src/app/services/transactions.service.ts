@@ -16,7 +16,7 @@ import {
   addDoc,
   orderBy
 } from '@angular/fire/firestore';
-import { Observable } from 'rxjs';
+import { from, Observable } from 'rxjs';
 import { TransactionModel } from '../models/transactions/transaction';
 import { TransactionTypeModel } from '../models/transactions/transactiontype';
 
@@ -59,31 +59,57 @@ export class TransactionsService {
 
   // --- TransactionType CRUD ---
 
-  createTransactionType(type: TransactionTypeModel): Promise<void> {
-    const typesCol = collection(this.firestore, 'transactionTypes');
-    return addDoc(typesCol, type).then(() => {});
-  }
-
-  getTransactionTypeById(id: string): Observable<TransactionTypeModel & { id: string }> {
-    const ref = doc(this.firestore, `transactionTypes/${id}`);
-    return docData(ref, { idField: 'id' }) as Observable<TransactionTypeModel & { id: string }>;
-  }
-
   getTransactionTypes(): Observable<(TransactionTypeModel & { id: string })[]> {
     const typesCol = collection(this.firestore, 'transactionTypes');
-    return collectionData(typesCol, { idField: 'id' }) as Observable<(TransactionTypeModel & { id: string })[]>;
+    return collectionData(typesCol, { idField: 'id' }) as Observable<
+      (TransactionTypeModel & { id: string })[]
+    >;
   }
 
-  updateTransactionType(id: string, data: Partial<TransactionTypeModel>): Promise<void> {
+  /**
+   * Create a new transaction type.
+   * Accepts only {name, description, isCredit} and
+   * returns an Observable you can subscribe() to.
+   */
+  createTransactionType(data: {
+    name: string;
+    description: string;
+    isCredit: boolean;
+  }): Observable<void> {
+    const typesCol = collection(this.firestore, 'transactionTypes');
+    const newRef = doc(typesCol);
+    return from(
+      setDoc(newRef, {
+        ...data,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      })
+    );
+  }
+
+  /** Update an existing transaction type by ID */
+  updateTransactionType(
+    id: string,
+    data: Partial<{
+      name: string;
+      description: string;
+      isCredit: boolean;
+    }>
+  ): Observable<void> {
     const ref = doc(this.firestore, `transactionTypes/${id}`);
-    return updateDoc(ref, data);
+    return from(
+      updateDoc(ref, {
+        ...data,
+        updatedAt: serverTimestamp()
+      })
+    );
   }
 
-  deleteTransactionType(id: string): Promise<void> {
+  /** Delete a transaction type by ID */
+  deleteTransactionType(id: string): Observable<void> {
     const ref = doc(this.firestore, `transactionTypes/${id}`);
-    return deleteDoc(ref);
+    return from(deleteDoc(ref));
   }
-
   // --- Query Helpers ---
 
   getTransactionsByWorkerId(workerId: string): Observable<(TransactionModel & { id: string })[]> {

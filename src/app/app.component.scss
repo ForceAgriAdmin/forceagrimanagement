@@ -2,6 +2,10 @@ mat-card{
   background-color: var(--mat-sys-background) !important;
 }
 
+.toolbar-spacer {
+  flex: 1 1 auto;
+}
+
 .info-snackbar {
   background-color: #2196f3; /* Blue */
   color: white;

@@ -1,0 +1,8 @@
+<ng-container *ngIf="notificationService.messages$ | async as messages">
+  <ng-container *ngFor="let not of messages">
+    <ejs-message [id]="not.id" [severity]="not.severity">
+      {{ not.message }}
+    </ejs-message>
+    <br /><br />
+  </ng-container>
+</ng-container>

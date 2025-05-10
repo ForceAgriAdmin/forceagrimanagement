@@ -1,0 +1,30 @@
+<h2 mat-dialog-title>
+  {{ isEdit ? 'Edit' : 'Add' }} Worker Type
+</h2>
+
+<form [formGroup]="workerForm" (ngSubmit)="save()">
+  <mat-dialog-content>
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Description</mat-label>
+      <input matInput formControlName="description" />
+      <mat-error
+        *ngIf="
+          workerForm.get('description')?.hasError('required')
+        "
+      >
+        Description is required
+      </mat-error>
+    </mat-form-field>
+  </mat-dialog-content>
+
+  <mat-dialog-actions [align]="end">
+    <button mat-button (click)="cancel()">Cancel</button>
+    <button
+      mat-button
+      color="primary"
+      [disabled]="workerForm.invalid"
+    >
+      {{ isEdit ? 'Save' : 'Create' }}
+    </button>
+  </mat-dialog-actions>
+</form>

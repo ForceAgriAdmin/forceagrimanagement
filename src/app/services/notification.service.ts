@@ -1,39 +1,45 @@
 import { Injectable } from '@angular/core';
-import { MatSnackBar, MatSnackBarConfig } from '@angular/material/snack-bar';
-
-
+import { BehaviorSubject, Observable } from 'rxjs';
+import { NotificationMessage } from '../models/layout/notificationmessage';
 
 @Injectable({
   providedIn: 'root',
 })
 export class NotificationService {
+  // Internal subject holding the current list of messages
+  private _messages = new BehaviorSubject<NotificationMessage[]>([]);
+  // Public observable for your component to bind to
+  public messages$: Observable<NotificationMessage[]> = this._messages.asObservable();
 
-  constructor(private snackBar: MatSnackBar) {}
-
-  showInfo(message: string, duration: number = 3000) {
-    this.openSnackBar(message, 'info-snackbar', duration);
+  showInfo(message: string) {
+    this.enqueue({ severity: 'Info', message });
   }
 
-  showSuccess(message: string, duration: number = 3000) {
-    this.openSnackBar(message, 'success-snackbar', duration);
+  showSuccess(message: string) {
+    this.enqueue({ severity: 'Success', message });
   }
 
-  showWarning(message: string, duration: number = 3000) {
-    this.openSnackBar(message, 'warning-snackbar', duration);
+  showWarning(message: string) {
+    this.enqueue({ severity: 'Warning', message });
   }
 
-  showError(message: string, duration: number = 3000) {
-    this.openSnackBar(message, 'error-snackbar', duration);
+  showError(message: string) {
+    this.enqueue({ severity: 'Error', message });
   }
 
-  private openSnackBar(message: string, panelClass: string, duration: number) {
-    const config: MatSnackBarConfig = {
-      duration,
-      panelClass: [panelClass],
-      horizontalPosition: 'center',
-      verticalPosition: 'top'
-    };
+  private enqueue(partial: Omit<NotificationMessage, 'id'>) {
+    const id = Date.now().toString();
+    const msg: NotificationMessage = { id, ...partial };
+    // append to the list
+    this._messages.next([...this._messages.value, msg]);
+    // schedule removal after 3 seconds
+    setTimeout(() => this.dismiss(id), 3000);
+  }
 
-    this.snackBar.open(message, 'Close', config);
+  /** Remove a message by ID */
+  dismiss(id: string) {
+    this._messages.next(
+      this._messages.value.filter(m => m.id !== id)
+    );
   }
 }

@@ -15,9 +15,10 @@ import {
   getDoc
 } from '@angular/fire/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from '@angular/fire/storage';
-import { Observable } from 'rxjs';
+import { from, Observable } from 'rxjs';
 import { WorkerModel } from '../models/workers/worker';
 import { IdentityCard } from '../models/workers/identitycard';
+import { WorkerTypeModel } from '../models/workers/worker-type';
 
 @Injectable({
   providedIn: 'root'
@@ -136,5 +137,47 @@ export class WorkersService {
         this.zone.run(() => getDownloadURL(snapshot.ref))
       );
     });
+  }
+
+   /** Fetch all worker types */
+  getWorkerTypes(): Observable<WorkerTypeModel[]> {
+    return runInInjectionContext(this.injector, () => {
+      const col = collection(this.firestore, 'workerTypes');
+      return collectionData(col, { idField: 'id' }) as Observable<WorkerTypeModel[]>;
+    });
+  }
+
+  /** Create a new worker type */
+  createWorkerType(description: string): Observable<WorkerTypeModel> {
+    return new Observable(observer => {
+      const col = collection(this.firestore, 'workerTypes');
+      const ref = doc(col);
+      setDoc(ref, {
+        description,
+        createdAt: serverTimestamp()
+      })
+        .then(() => {
+          observer.next({ id: ref.id, description });
+          observer.complete();
+        })
+        .catch(err => observer.error(err));
+    });
+  }
+
+  /** Update an existing worker type */
+  updateWorkerType(id: string, description: string): Observable<void> {
+    const ref = doc(this.firestore, `workerTypes/${id}`);
+    return from(
+      updateDoc(ref, {
+        description,
+        updatedAt: serverTimestamp()
+      })
+    );
+  }
+
+  /** Delete a worker type */
+  deleteWorkerType(id: string): Observable<void> {
+    const ref = doc(this.firestore, `workerTypes/${id}`);
+    return from(deleteDoc(ref));
   }
 }
