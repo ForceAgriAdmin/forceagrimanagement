@@ -1,0 +1,44 @@
+/* report-management.component.scss */
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.report-card {
+  cursor: pointer;
+  width: 10rem;
+  height: 10rem;
+  border-radius: 8px;
+  background-color: var(--mat-sys-background);
+  color: #424242;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.3s, transform 0.2s;
+
+  &:hover {
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+    transform: translateY(-3px);
+  }
+
+  mat-card-content {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+}
+
+.spinner {
+  display: flex;
+  justify-content: center;
+  padding: 32px;
+}

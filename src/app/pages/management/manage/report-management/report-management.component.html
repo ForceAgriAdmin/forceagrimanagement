@@ -1,0 +1,57 @@
+<!-- src/app/components/manage/report-management.component.html -->
+
+<h2>Reports</h2>
+
+<!-- Search bar + Add button toolbar -->
+<div class="toolbar">
+  <app-force-search
+    label="Search"
+    placeholder="By name or description…"
+    (searchChange)="onSearch($event)"
+    (cancel)="onClear()"
+  ></app-force-search>
+
+  <app-force-button
+    label="Add Report"
+    icon="add"
+    (action)="onAddEdit()"
+  ></app-force-button>
+</div>
+
+<!-- Cards grid when data is ready -->
+<div *ngIf="!loading; else busy">
+  <div class="cards">
+    <mat-card
+      class="report-card"
+      *ngFor="let r of filtered.data"
+      (click)="onRun(r)"
+      [matTooltip]="r.description"
+      matTooltipPosition="above"
+    >
+      <mat-card-content>
+        <mat-card-title>{{ r.name }}</mat-card-title>
+      </mat-card-content>
+      <mat-card-actions>
+        <button
+          mat-icon-button
+          (click)="onAddEdit(r); $event.stopPropagation()"
+        >
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button
+          mat-icon-button
+          (click)="svc.deleteReport(r.id).subscribe(); $event.stopPropagation()"
+        >
+          <mat-icon>delete</mat-icon>
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+</div>
+
+<!-- Loading spinner -->
+<ng-template #busy>
+  <div class="spinner">
+    <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
+  </div>
+</ng-template>

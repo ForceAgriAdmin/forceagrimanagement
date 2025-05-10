@@ -1,0 +1,61 @@
+<h2 mat-dialog-title>{{ data ? 'Edit' : 'Add' }} Report</h2>
+
+<form [formGroup]="form" (ngSubmit)="save()">
+  <mat-dialog-content>
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Name</mat-label>
+      <input matInput formControlName="name" />
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Description</mat-label>
+      <input matInput formControlName="description" />
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Associations</mat-label>
+      <mat-select formControlName="associations" multiple>
+        <mat-option *ngFor="let a of ALL_ASSOCIATIONS" [value]="a">
+          {{ a }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <h3>Fields to return</h3>
+    <div formArrayName="fields" class="fields">
+      <div
+        *ngFor="let fg of fieldsArray.controls; let i = index"
+        [formGroupName]="i"
+        class="field-row"
+      >
+        <mat-form-field appearance="fill" class="field-key">
+          <mat-label>Property</mat-label>
+          <mat-select formControlName="key">
+            <mat-option
+              *ngFor="let opt of availableProperties"
+              [value]="opt.key"
+            >
+              {{ opt.label }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="field-label">
+          <mat-label>Label</mat-label>
+          <input matInput formControlName="label" />
+        </mat-form-field>
+
+        <button mat-icon-button type="button" (click)="removeField(i)">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </div>
+
+      <button mat-button type="button" (click)="addField()">+ Add field</button>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions [align]="end">
+    <button mat-button (click)="cancel()">Cancel</button>
+    <button mat-button color="primary" [disabled]="form.invalid">Save</button>
+  </mat-dialog-actions>
+</form>
