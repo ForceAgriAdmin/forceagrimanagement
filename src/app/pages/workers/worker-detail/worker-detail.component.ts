@@ -146,7 +146,6 @@ export class WorkerDetailComponent implements OnInit {
           // TODO: show error
           return;
         }
-        this.loading = true;
         const updateData: Partial<WorkerModel> & { id: string } = {
           ...(this.form.value as Omit<WorkerModel, 'id' | 'createdAt' | 'updatedAt'>),
           id: this.worker.id
@@ -157,7 +156,6 @@ export class WorkerDetailComponent implements OnInit {
         break;
 
       case 'printCard':
-       this.loading = true;
   try {
     // 1) first await the Promise to get the Observable
     const card$ = await this.cs.getWorkerCard(this.worker.id);

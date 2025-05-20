@@ -1,41 +1,51 @@
-<!-- worker-identity-card.component.html -->
 <mat-card *ngIf="worker" class="identity-card">
-    <mat-card-header>
-      <mat-card-title>Identity Card</mat-card-title>
-    </mat-card-header>
-    <mat-card-content>
-      <div class="grid">
-        <div class="profile">
-          <img [src]="worker.profileImageUrl || 'assets/default-avatar.png'" alt="Profile" />
+  <mat-card-header>
+    <mat-card-title>Identity Card</mat-card-title>
+  </mat-card-header>
+  <mat-card-content>
+    <div class="grid">
+      <div class="profile">
+        <!-- async-pipe the cached URL, fall back to default avatar -->
+        <img
+          [src]="(profileImageUrl$ | async) || 'assets/default-avatar.png'"
+          alt="Profile"
+        />
+      </div>
+      <div class="details">
+        <h1>{{ worker.firstName }} {{ worker.lastName }}</h1>
+        <div class="field">
+          Emp Number: <span class="bold-text">{{ worker.employeeNumber }}</span>
         </div>
-        <div class="details">
-          <h1>{{ worker.firstName }} {{ worker.lastName }}</h1>
-          <div class="field">Emp Number: <span class="bold-text">{{ worker.employeeNumber }}</span></div>
-          <div class="field">ID Number: <span class="bold-text">{{ worker.idNumber }}</span></div>
-          <div class="field">Operation: <span class="bold-text">{{ getOperationName() }}</span></div>
-          <div class="field">Farm: <span class="bold-text">{{ getFarmName()}}</span></div>
+        <div class="field">
+          ID Number: <span class="bold-text">{{ worker.idNumber }}</span>
         </div>
-        <div *ngIf="workerIdentityCard" class="qr">
-          <ejs-qrcodegenerator
-          style="display: block;background-color: transparent !important;"
-            [displayText]="noText"
-            mode="Svg"
-            [value]="QrValue"
-            width="150"
-            height="150"
-            backgroundColor="transparent">
-          </ejs-qrcodegenerator>
+        <div class="field">
+          Operation: <span class="bold-text">{{ getOperationName() }}</span>
         </div>
-        <div *ngIf="workerIdentityCard" class="barcode">
-          <ejs-barcodegenerator
-            type="Code128"
-            [value]="BarcodeValue"
-            width="100%"
-            height="100px"
-            backgroundColor="transparent">
-          </ejs-barcodegenerator>
+        <div class="field">
+          Farm: <span class="bold-text">{{ getFarmName() }}</span>
         </div>
       </div>
-    </mat-card-content>
-  </mat-card>
-  
+      <div *ngIf="workerIdentityCard" class="qr">
+        <ejs-qrcodegenerator
+          style="display: block; background-color: transparent !important;"
+          [displayText]="noText"
+          mode="Svg"
+          [value]="QrValue"
+          width="150"
+          height="150"
+          backgroundColor="transparent"
+        ></ejs-qrcodegenerator>
+      </div>
+      <div *ngIf="workerIdentityCard" class="barcode">
+        <ejs-barcodegenerator
+          type="Code128"
+          [value]="BarcodeValue"
+          width="100%"
+          height="100px"
+          backgroundColor="transparent"
+        ></ejs-barcodegenerator>
+      </div>
+    </div>
+  </mat-card-content>
+</mat-card>

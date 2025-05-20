@@ -5,6 +5,8 @@ import html2canvas from 'html2canvas';
 
 import QRCode from 'qrcode';
 import JsBarcode from 'jsbarcode';
+import { WorkersService } from './workerservice.service';
+import { firstValueFrom } from 'rxjs';
 
 export interface CardConfig {
   worker: any;
@@ -17,6 +19,8 @@ export interface CardConfig {
   providedIn: 'root'
 })
 export class PrintingService {
+
+  constructor(private workersService: WorkersService){}
   // ─────────────────────────────────────────────────────────
   // 1) Your original report generator (UNCHANGED)
   // ─────────────────────────────────────────────────────────
@@ -105,11 +109,33 @@ export class PrintingService {
   private readonly CARD_H = 53.98;  // mm
 
   async printCard(cfg: CardConfig) {
-    const frontImg = await this.renderHtmlToImage(
-      this.buildCardFront(cfg),
-      this.CARD_W, this.CARD_H
+    // 1) get the cached (or fresh) download URL
+    const downloadUrl = await firstValueFrom(
+      this.workersService.getProfileImageUrl(cfg.worker.profileImageUrl)
     );
 
+    // 2) fetch the blob and convert to data-URL
+    const blob = await fetch(downloadUrl).then(r => r.ok ? r.blob() : Promise.reject(r.statusText));
+    const dataUrl = await new Promise<string>(resolve => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.readAsDataURL(blob);
+    });
+
+    // 3) override the worker.profileImageUrl with our inline data URL
+    const frontCfg: CardConfig = {
+      ...cfg,
+      worker: {
+        ...cfg.worker,
+        profileImageUrl: dataUrl
+      }
+    };
+
+    // 4) render exactly as before
+    const frontImg = await this.renderHtmlToImage(
+      this.buildCardFront(frontCfg),
+      this.CARD_W, this.CARD_H
+    );
     const backHtml = await this.buildCardBack(cfg);
     const backImg  = await this.renderHtmlToImage(
       backHtml,
@@ -124,10 +150,8 @@ export class PrintingService {
     pdf.addImage(frontImg, 'PNG', 0, 0, this.CARD_W, this.CARD_H);
     pdf.addPage();
     pdf.addImage(backImg,  'PNG', 0, 0, this.CARD_W, this.CARD_H);
-
     pdf.save(`ID_Card_${cfg.identityCard.number}.pdf`);
   }
-
   private async renderHtmlToImage(html: string, wMM: number, hMM: number) {
     const wrapper = document.createElement('div');
     Object.assign(wrapper.style, {
@@ -150,11 +174,74 @@ export class PrintingService {
     return canvas.toDataURL('image/png');
   }
 
-  private buildCardFront({ worker, operation, farm, identityCard }: CardConfig): string {
+//   private buildCardFront({ worker, operation, farm, identityCard }: CardConfig): string {
+//   const first = worker.firstName || '—';
+//   const last  = worker.lastName  || '—';
+//   return `
+//     <div style="
+//       display: grid;
+//       grid-template-columns: 1fr 2fr;
+//       grid-template-rows: auto 1fr auto;
+//       gap: 2mm;
+//       width: 100%; height: 100%;
+//       font-family: Roboto, sans-serif;
+//     ">
+      
+//       <!-- Avatar -->
+//       <div style="
+//         grid-column: 1 / 2;
+//         grid-row: 1 / 3;
+//         display: flex;
+//         align-items: center;
+//         justify-content: center;
+//       ">
+//         <img src="${worker.profileImageUrl || 'assets/default-avatar.png'}"
+//              style="width:35mm;height:35mm;object-fit:cover;border-radius:4px" />
+//       </div>
+      
+//       <!-- Details -->
+//       <div style="
+//         grid-column: 2 / 3;
+//         grid-row: 1 / 2;
+//         padding-left: 5mm;
+//         padding-top: 10mm;
+//         font-size: 8pt;
+//       ">
+//         <strong style="font-size:12pt">${first} ${last}</strong><br/>
+//         Emp #: ${worker.employeeNumber}<br/>
+//         ID #: ${worker.idNumber}<br/>
+//         Op: ${operation.name}<br/>
+//         Farm: ${farm.name}
+//       </div>
+
+//       <!-- Spacer (optional if you need to push the bottom row down) -->
+//       <div style="
+//         grid-column: 2 / 3;
+//         grid-row: 2 / 3;
+//       "></div>
+
+//       <!-- Card number, full-width bottom row -->
+//       <div style="
+//         grid-column: 1 / 3;
+//         grid-row: 3 / 4;
+//         display: flex;
+//         align-items: center;
+//         justify-content: center;
+//         font-size: 9pt;
+//         margin-bottom: 2mm;
+//       ">
+//         ${identityCard.number}
+//       </div>
+//     </div>`;
+// }
+private buildCardFront({ worker, operation, farm, identityCard }: CardConfig): string {
   const first = worker.firstName || '—';
   const last  = worker.lastName  || '—';
+  const imgSrc = worker.profileImageUrl || 'assets/default-avatar.png';
+
   return `
     <div style="
+      border: 0.5mm solid black;
       display: grid;
       grid-template-columns: 1fr 2fr;
       grid-template-rows: auto 1fr auto;
@@ -162,8 +249,7 @@ export class PrintingService {
       width: 100%; height: 100%;
       font-family: Roboto, sans-serif;
     ">
-      
-      <!-- Avatar -->
+      <!-- Avatar with CORS enabled -->
       <div style="
         grid-column: 1 / 2;
         grid-row: 1 / 3;
@@ -171,8 +257,11 @@ export class PrintingService {
         align-items: center;
         justify-content: center;
       ">
-        <img src="${worker.profileImageUrl || 'assets/default-avatar.png'}"
-             style="width:35mm;height:35mm;object-fit:cover;border-radius:4px" />
+        <img 
+          src="${imgSrc}"
+          crossorigin="anonymous"
+          style="width:35mm; height:35mm; object-fit:cover; border-radius:4px"
+        />
       </div>
       
       <!-- Details -->
@@ -190,13 +279,13 @@ export class PrintingService {
         Farm: ${farm.name}
       </div>
 
-      <!-- Spacer (optional if you need to push the bottom row down) -->
+      <!-- Spacer -->
       <div style="
         grid-column: 2 / 3;
         grid-row: 2 / 3;
       "></div>
 
-      <!-- Card number, full-width bottom row -->
+      <!-- Card number -->
       <div style="
         grid-column: 1 / 3;
         grid-row: 3 / 4;
@@ -210,7 +299,6 @@ export class PrintingService {
       </div>
     </div>`;
 }
-
   /** replace remote-URL buildCardBack with in-memory Data-URLs */
   private async buildCardBack(cfg: CardConfig): Promise<string> {
   // 1) Build the composite QR value directly off the worker
@@ -239,23 +327,23 @@ export class PrintingService {
   const bcDataUrl = bcCanvas.toDataURL('image/png');
 
   // 4) Return HTML: QR on top, barcode + tiny card # beneath
-  return `
+   return `
     <div style="
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      width:100%;
-      height:100%;
-      padding:2mm;
-      font-family:Roboto, sans-serif;
+      border: 0.5mm solid black;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%; height: 100%;
+      padding: 2mm;
+      font-family: Roboto, sans-serif;
     ">
       <!-- QR block -->
       <div style="
-        flex:1;
-        display:flex;
-        justify-content:center;
-        align-items:center;
-        margin-bottom:0mm;
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 0mm;
       ">
         <img src="${qrDataUrl}"
              style="max-width:20mm;max-height:20mm;" />
@@ -263,21 +351,15 @@ export class PrintingService {
 
       <!-- Barcode + tiny card number -->
       <div style="
-        flex:0;
-        display:flex;
-        flex-direction:column;
-        align-items:center;
-        margin-bottom:6mm;
+        flex: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 6mm;
       ">
-        <!-- barcode itself -->
         <img src="${bcDataUrl}"
              style="height:12mm; object-fit:contain;" />
-
-        <!-- very small label underneath -->
-        <div style="
-          margin-top:1mm;
-          font-size:9pt;
-        ">
+        <div style="margin-top:1mm;font-size:9pt;">
           ${cfg.identityCard.number}
         </div>
       </div>

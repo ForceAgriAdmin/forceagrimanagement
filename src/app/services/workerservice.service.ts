@@ -15,83 +15,120 @@ import {
   getDoc
 } from '@angular/fire/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from '@angular/fire/storage';
-import { from, map, Observable } from 'rxjs';
+import { from, map, Observable, of, tap } from 'rxjs';
 import { WorkerModel } from '../models/workers/worker';
 import { IdentityCard } from '../models/workers/identitycard';
 import { WorkerTypeModel } from '../models/workers/worker-type';
+
+// Simple in-memory cache for image URLs
+interface ImageCacheEntry {
+  url: string;
+  timestamp: number;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class WorkersService {
+  private imageCache = new Map<string, ImageCacheEntry>();
+  private readonly CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+
   constructor(
     private firestore: Firestore,
     private injector: Injector,
     private zone: NgZone
   ) {}
 
+  /**
+   * Return a cached download URL for 30 minutes.
+   * Accepts either a full URL or a storage path.
+   */
+  getProfileImageUrl(pathOrUrl: string): Observable<string> {
+    const now = Date.now();
+    const cached = this.imageCache.get(pathOrUrl);
+    if (cached && now - cached.timestamp < this.CACHE_TTL) {
+      return of(cached.url);
+    }
+
+    let url$: Observable<string>;
+    if (pathOrUrl.startsWith('http')) {
+      url$ = of(pathOrUrl);
+    } else {
+      const storage = getStorage();
+      const storageRef = ref(storage, pathOrUrl);
+      url$ = from(getDownloadURL(storageRef));
+    }
+
+    return url$.pipe(
+      tap(url => this.imageCache.set(pathOrUrl, { url, timestamp: now }))
+    );
+  }
+
   /** Create a new worker and immediately issue a card */
   async addWorker(
     worker: Omit<WorkerModel, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<void> {
-    const workersCol = collection(this.firestore, 'workers');
-    const workerRef = doc(workersCol);
-    const id = workerRef.id;
+    return runInInjectionContext(this.injector, async () => {
+      const workersCol = collection(this.firestore, 'workers');
+      const workerRef = doc(workersCol);
+      const id = workerRef.id;
 
-    const newWorker: WorkerModel = {
-      id,
-      ...worker,
-      createdAt: serverTimestamp() as any,
-      updatedAt: serverTimestamp() as any
-    };
+      const newWorker: WorkerModel = {
+        id,
+        ...worker,
+        createdAt: serverTimestamp() as any,
+        updatedAt: serverTimestamp() as any
+      };
 
-    await setDoc(workerRef, newWorker);
-    await this.issueCard(id);
+      await setDoc(workerRef, newWorker);
+      await this.issueCard(id);
+    });
   }
-getWorkerCard(workerId: string): Observable<IdentityCard | undefined> {
+
+  getWorkerCard(workerId: string): Observable<IdentityCard | undefined> {
     return runInInjectionContext(this.injector, () => {
       const cardsCol = collection(this.firestore, 'cards');
       const q = query(
         cardsCol,
         where('workerId', '==', workerId),
-        where('active',     '==', true)
+        where('active', '==', true)
       );
       return collectionData(q, { idField: 'id' }) as Observable<IdentityCard[]>;
     }).pipe(
       map(cards => cards.length ? cards[0] : undefined)
     );
   }
+
   /** Update a worker; if operationId or farmId changed, issue a new card */
   async updateWorker(
     worker: Partial<WorkerModel> & { id: string }
   ): Promise<void> {
-    const workerRef = doc(this.firestore, `workers/${worker.id}`);
-    const snap = await getDoc(workerRef);
+    return runInInjectionContext(this.injector, async () => {
+      const workerRef = doc(this.firestore, `workers/${worker.id}`);
+      const snap = await getDoc(workerRef);
 
-    if (!snap.exists()) {
-      throw new Error('Worker not found');
-    }
+      if (!snap.exists()) {
+        throw new Error('Worker not found');
+      }
 
-    const existing = snap.data() as WorkerModel;
-    const newOp = worker.operationId ?? existing.operationId;
-    const newFarm = worker.farmId ?? existing.farmId;
+      const existing = snap.data() as WorkerModel;
+      const newOp = worker.operationId ?? existing.operationId;
+      const newFarm = worker.farmId ?? existing.farmId;
 
-    // if either key field changed, deactivate old cards & issue a fresh one
-    if (newOp !== existing.operationId || newFarm !== existing.farmId) {
-      await this.issueCard(worker.id);
-    }
+      if (newOp !== existing.operationId || newFarm !== existing.farmId) {
+        await this.issueCard(worker.id);
+      }
 
-    await updateDoc(workerRef, {
-      ...worker,
-      updatedAt: serverTimestamp() as any
+      await updateDoc(workerRef, {
+        ...worker,
+        updatedAt: serverTimestamp() as any
+      });
     });
   }
 
   /** Deactivate all cards for this worker, then create a new one */
   private async issueCard(workerId: string): Promise<void> {
     const cardsCol = collection(this.firestore, 'cards');
-
-    // deactivate existing
     const q = query(cardsCol, where('workerId', '==', workerId));
     const snapshots = await getDocs(q);
     for (const ds of snapshots.docs) {
@@ -99,7 +136,6 @@ getWorkerCard(workerId: string): Observable<IdentityCard | undefined> {
       await updateDoc(cardRef, { active: false });
     }
 
-    // create new
     const newRef = doc(cardsCol);
     const newCard: IdentityCard = {
       id: newRef.id,
@@ -136,8 +172,10 @@ getWorkerCard(workerId: string): Observable<IdentityCard | undefined> {
   }
 
   deleteWorker(id: string): Promise<void> {
-    const docRef = doc(this.firestore, `workers/${id}`);
-    return deleteDoc(docRef);
+    return runInInjectionContext(this.injector, () => {
+      const docRef = doc(this.firestore, `workers/${id}`);
+      return deleteDoc(docRef);
+    });
   }
 
   uploadProfileImage(file: File): Promise<string> {
@@ -151,7 +189,7 @@ getWorkerCard(workerId: string): Observable<IdentityCard | undefined> {
     });
   }
 
-   /** Fetch all worker types */
+  /** Fetch all worker types */
   getWorkerTypes(): Observable<WorkerTypeModel[]> {
     return runInInjectionContext(this.injector, () => {
       const col = collection(this.firestore, 'workerTypes');
