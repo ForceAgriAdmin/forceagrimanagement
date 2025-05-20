@@ -108,30 +108,23 @@ export class PrintingService {
   private readonly CARD_W = 85.6;   // mm
   private readonly CARD_H = 53.98;  // mm
 
-  async printCard(cfg: CardConfig) {
-    // 1) get the cached (or fresh) download URL
+   async printCard(cfg: CardConfig) {
+    // 1) Fetch and inline the image URL (as before)
     const downloadUrl = await firstValueFrom(
       this.workersService.getProfileImageUrl(cfg.worker.profileImageUrl)
     );
-
-    // 2) fetch the blob and convert to data-URL
-    const blob = await fetch(downloadUrl).then(r => r.ok ? r.blob() : Promise.reject(r.statusText));
+    const blob = await fetch(downloadUrl).then(r => r.blob());
     const dataUrl = await new Promise<string>(resolve => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
       reader.readAsDataURL(blob);
     });
-
-    // 3) override the worker.profileImageUrl with our inline data URL
     const frontCfg: CardConfig = {
       ...cfg,
-      worker: {
-        ...cfg.worker,
-        profileImageUrl: dataUrl
-      }
+      worker: { ...cfg.worker, profileImageUrl: dataUrl }
     };
 
-    // 4) render exactly as before
+    // 2) Render front and back to PNG data-URLs
     const frontImg = await this.renderHtmlToImage(
       this.buildCardFront(frontCfg),
       this.CARD_W, this.CARD_H
@@ -142,14 +135,28 @@ export class PrintingService {
       this.CARD_W, this.CARD_H
     );
 
+    // 3) Build PDF
     const pdf = new jsPDF({
       orientation: 'landscape',
       unit: 'mm',
       format: [this.CARD_W, this.CARD_H]
     });
+
+    // FRONT SIDE
     pdf.addImage(frontImg, 'PNG', 0, 0, this.CARD_W, this.CARD_H);
+    // draw a 0.5 mm border inset by 1 mm
+    pdf.setLineWidth(0.5);
+    pdf.setDrawColor(0, 0, 0);
+    pdf.rect(1, 1, this.CARD_W - 2, this.CARD_H - 2);
+
+    // BACK SIDE
     pdf.addPage();
-    pdf.addImage(backImg,  'PNG', 0, 0, this.CARD_W, this.CARD_H);
+    pdf.addImage(backImg, 'PNG', 0, 0, this.CARD_W, this.CARD_H);
+    pdf.setLineWidth(0.5);
+    pdf.setDrawColor(0, 0, 0);
+    pdf.rect(1, 1, this.CARD_W - 2, this.CARD_H - 2);
+
+    // 4) Save
     pdf.save(`ID_Card_${cfg.identityCard.number}.pdf`);
   }
   private async renderHtmlToImage(html: string, wMM: number, hMM: number) {
