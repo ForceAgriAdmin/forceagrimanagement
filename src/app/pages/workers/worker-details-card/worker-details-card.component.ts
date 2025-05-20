@@ -7,6 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { WorkerModel } from '../../../models/workers/worker';
+import { WorkerTypeModel } from '../../../models/workers/worker-type';
 
 export interface LookupItem {
   id: string | number;
@@ -29,6 +30,7 @@ export interface LookupItem {
 })
 export class WorkerDetailsCardComponent {
   @Input() worker!: WorkerModel; 
+  @Input() workerTypes: WorkerTypeModel[] =[]; 
   @Input() form!: FormGroup;
   @Input() operations: LookupItem[] = [];
   @Input() farms: LookupItem[] = [];

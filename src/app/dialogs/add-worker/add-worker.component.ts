@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
+import { MatDialogRef, MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { CommonModule } from '@angular/common';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -11,6 +11,7 @@ import { OperationModel } from '../../models/operations/operation';
 import { OperationService } from '../../services/operation.service';
 import { WorkersService } from '../../services/workerservice.service';
 import { CardService } from '../../services/card.service';
+import { CropperComponent } from '../cropper/cropper.component';
 
 @Component({
   selector: 'app-add-worker',
@@ -30,6 +31,7 @@ import { CardService } from '../../services/card.service';
 export class AddWorkerComponent implements OnInit {
   workerForm: FormGroup;
   selectedFile: File | null = null;
+  croppedFile: File | null = null;
   operations: OperationModel[] = [];
 end: "center"|"start"|"end"|undefined;
 
@@ -38,6 +40,7 @@ end: "center"|"start"|"end"|undefined;
     private operationService: OperationService,
     private workersService: WorkersService,
     private cardService: CardService,
+    private dialog: MatDialog,
     private dialogRef: MatDialogRef<AddWorkerComponent>
   ) {
     // Note: profileImageUrl is not in the form since that comes from file upload.
@@ -60,14 +63,31 @@ end: "center"|"start"|"end"|undefined;
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       this.selectedFile = input.files[0];
+
+      this.openCropper(this.selectedFile);
     }
+  }
+
+  //use selectedfie to Open Cropper 
+  openCropper(f: File ){
+     const dialogRef = this.dialog.open(CropperComponent, {
+      width: '1600px',
+      data: { file: f },
+      disableClose: true
+    });
+
+   dialogRef.afterClosed().subscribe((cf: File | undefined) => {
+    if (cf) {
+      this.croppedFile = cf;
+    }
+  });
   }
 
   onSubmit(): void {
     if (this.workerForm.valid) {
-      if (this.selectedFile) {
+      if (this.croppedFile) {
         // Upload the image to Firebase Storage
-        this.workersService.uploadProfileImage(this.selectedFile)
+        this.workersService.uploadProfileImage(this.croppedFile)
           .then(url => {
             const workerData = {
               ...this.workerForm.value,
@@ -82,14 +102,7 @@ end: "center"|"start"|"end"|undefined;
             // Optionally notify the user of the failure.
           });
       } else {
-        // No file selected – use an empty string or default image URL
-        const workerData = {
-          ...this.workerForm.value,
-          farmId: 'fixedFarmID',
-          currentBalance: 0,
-          profileImageUrl: ''
-        };
-        this.dialogRef.close(workerData);
+        //TODO: Error message
       }
     }
   }

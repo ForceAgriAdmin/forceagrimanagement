@@ -15,7 +15,7 @@ import {
   getDoc
 } from '@angular/fire/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from '@angular/fire/storage';
-import { from, Observable } from 'rxjs';
+import { from, map, Observable } from 'rxjs';
 import { WorkerModel } from '../models/workers/worker';
 import { IdentityCard } from '../models/workers/identitycard';
 import { WorkerTypeModel } from '../models/workers/worker-type';
@@ -48,7 +48,19 @@ export class WorkersService {
     await setDoc(workerRef, newWorker);
     await this.issueCard(id);
   }
-
+getWorkerCard(workerId: string): Observable<IdentityCard | undefined> {
+    return runInInjectionContext(this.injector, () => {
+      const cardsCol = collection(this.firestore, 'cards');
+      const q = query(
+        cardsCol,
+        where('workerId', '==', workerId),
+        where('active',     '==', true)
+      );
+      return collectionData(q, { idField: 'id' }) as Observable<IdentityCard[]>;
+    }).pipe(
+      map(cards => cards.length ? cards[0] : undefined)
+    );
+  }
   /** Update a worker; if operationId or farmId changed, issue a new card */
   async updateWorker(
     worker: Partial<WorkerModel> & { id: string }

@@ -12,4 +12,5 @@ export interface WorkerModel {
   profileImageUrl: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+  workerTypeId: string;
 }

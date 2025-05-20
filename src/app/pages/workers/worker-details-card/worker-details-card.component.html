@@ -27,9 +27,9 @@
   
         <!-- row 3: farm + operation -->
         <mat-form-field appearance="fill">
-          <mat-label>Farm</mat-label>
-          <mat-select formControlName="farmId">
-            <mat-option *ngFor="let f of farms" [value]="f.id">{{ f.name }}</mat-option>
+          <mat-label>Worker Type</mat-label>
+          <mat-select formControlName="workerTypeId">
+            <mat-option *ngFor="let types of workerTypes" [value]="types.id">{{ types.description }}</mat-option>
           </mat-select>
         </mat-form-field>
         <mat-form-field appearance="fill">

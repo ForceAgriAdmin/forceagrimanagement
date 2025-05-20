@@ -1,0 +1,22 @@
+<h2 mat-dialog-title>Crop Profile Image</h2>
+<mat-dialog-content>
+  <image-cropper
+  [imageFile]="data.file"           
+  [maintainAspectRatio]="true"
+  [aspectRatio]="1 / 1"
+  [resizeToWidth]="500"
+  format="png"                      
+  output="blob"                     
+  (imageCropped)="onImageCropped($event)"
+  (loadImageFailed)="onCropperLoadError()"
+></image-cropper>
+
+  <div *ngIf="croppedBase64" class="preview">
+    <h4>Cropped Preview</h4>
+    <img [src]="croppedBase64" />
+  </div>
+</mat-dialog-content>
+<mat-dialog-actions [align]="end">
+  <button mat-button (click)="onCancel()">Cancel</button>
+  <button mat-button color="primary" (click)="onUseImage()">Use Image</button>
+</mat-dialog-actions>

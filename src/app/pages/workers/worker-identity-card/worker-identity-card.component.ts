@@ -80,7 +80,7 @@ export class WorkerIdentityCardComponent {
   }
 
   get QrValue(): string {
-    return `http://localhost:4200/qr/card/${this.workerIdentityCard.number}`;
+    return `card:${this.workerIdentityCard.number}workerId:${this.worker.id}farmId:${this.worker.farmId}operationId:${this.worker.operationId}`;
   }
 
   get BarcodeValue(): string {

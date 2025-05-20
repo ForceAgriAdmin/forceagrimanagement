@@ -30,6 +30,7 @@ import { PaymentGroupService }    from '../../services/payment-group.service';
 import * as XLSX from 'xlsx';
 import { AppReport }              from '../../models/reports/appreport';
 import { Association }           from '../../models/reports/association';
+import { PrintingService } from '../../services/printing.service';
 
 @Component({
   selector: 'app-run-report',
@@ -69,7 +70,8 @@ end: "center"|"start"|"end"|undefined;
     private ws: WorkersService,
     private ops: OperationService,
     private fs: FarmService,
-    private pgs: PaymentGroupService
+    private pgs: PaymentGroupService,
+    private printSvc: PrintingService
   ) {}
 
   ngOnInit() {
@@ -147,26 +149,23 @@ end: "center"|"start"|"end"|undefined;
     });
   }
 
-  exportPDF() {
-    const data = this.getFilteredRows();
-    const w = window.open('', '_blank')!;
-    w.document.write(`
-      <h1>${this.report.name}</h1>
-      <p>From: ${this.form.value.from.toLocaleDateString()} 
-         To: ${this.form.value.to.toLocaleDateString()}</p>
-      <table border="1" cellpadding="4">
-        <thead><tr>${this.report.fields
-          .map(f => `<th>${f.label}</th>`)
-          .join('')}</tr></thead>
-        <tbody>${data
-          .map(row => `<tr>${this.report.fields
-            .map(f => `<td>${row[f.label] || ''}</td>`)
-            .join('')}</tr>`)
-          .join('')}</tbody>
-      </table>
-    `);
-    w.document.close();
-    w.print();
+  async exportPDF() {
+    const rows   = this.getFilteredRows();
+    const cols   = this.report.fields.map(f => ({ label: f.label, key: f.key }));
+    const logo   = '/assets/anebfarming.jpg';  // or inject via environment
+    const from   = this.form.value.from;
+    const to     = this.form.value.to;
+    const name   = this.report.name.replace(/\s+/g,'_');
+
+    await this.printSvc.generatePdf({
+      reportName: this.report.name,
+      from,
+      to,
+      logoUrl: logo,
+      columns: cols,
+      rows,
+      fileName: `Report_${name}_${formatDate(from)}-${formatDate(to)}`
+    });
   }
 
   exportExcel() {
@@ -180,4 +179,13 @@ end: "center"|"start"|"end"|undefined;
   close() {
     this.dialogRef.close();
   }
+
+  
+}
+
+function formatDate(d: Date): string {
+  const yyyy = d.getFullYear();
+  const mm   = String(d.getMonth()+1).padStart(2,'0');
+  const dd   = String(d.getDate()).padStart(2,'0');
+  return `${yyyy}${mm}${dd}`;
 }

@@ -9,7 +9,8 @@
                   (action)="onAction($event)"
                   [buttons]="[
                     { id: 'save',   label: 'Save',   icon: 'save'   },
-                    { id: 'settle', label: 'Settle', icon: 'save' }
+                    { id: 'settle', label: 'Settle', icon: 'save' },
+                    { id: 'printCard',  label: 'Print Card', icon: 'print'  }
                   ]"
                 ></app-action-toolbar>
           
@@ -19,6 +20,7 @@
                     [worker]="worker"
                     [form]="form"
                     [operations]="operations"
+                    [workerTypes]="workerTypes"
                     [farms]="farms"
                   ></app-worker-details-card>
           

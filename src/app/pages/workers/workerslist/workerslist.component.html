@@ -41,14 +41,17 @@
           alt="Worker"
         />
       </div>
-      <mat-card-title>
-        {{ worker.firstName }} {{ worker.lastName }}
-      </mat-card-title>
-      <mat-card-subtitle>
-        {{ getOperationName(worker.operationId) }}
-      </mat-card-subtitle>
+      <div class="worker-info">
+        <mat-card-title>
+          {{ worker.firstName }} {{ worker.lastName }}
+        </mat-card-title>
+        <mat-card-subtitle>
+          {{ getOperationName(worker.operationId) }}
+        </mat-card-subtitle>
+      </div>
+     
     </mat-card-header>
-    <mat-card-content>
+    <mat-card-content style="margin-left: 20px;">
       <p>
        Balance:
         <span
