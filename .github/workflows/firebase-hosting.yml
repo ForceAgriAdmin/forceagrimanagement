@@ -16,10 +16,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
+      - name: Setup Node.js 20
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: '20'
 
       - name: Install dependencies
         run: npm ci
@@ -30,10 +30,10 @@ jobs:
       - name: Deploy to preview channel
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
-          repoToken:            ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_FORCEAGRI_46988 }}
-          projectId:           forceagri-46988
-          channelId:           pr-${{ github.event.pull_request.number }}
+          repoToken:               ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount:  ${{ secrets.FIREBASE_SERVICE_ACCOUNT_FORCEAGRI_46988 }}
+          projectId:               forceagri-46988
+          channelId:               pr-${{ github.event.pull_request.number }}
 
   # 2) Live deploy on push to master
   deploy:
@@ -43,10 +43,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
+      - name: Setup Node.js 20
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: '20'
 
       - name: Install dependencies
         run: npm ci
@@ -57,7 +57,7 @@ jobs:
       - name: Deploy to live channel
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
-          repoToken:            ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_FORCEAGRI_46988 }}
-          projectId:           forceagri-46988
-          channelId:           live
+          repoToken:               ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount:  ${{ secrets.FIREBASE_SERVICE_ACCOUNT_FORCEAGRI_46988 }}
+          projectId:               forceagri-46988
+          channelId:               live
