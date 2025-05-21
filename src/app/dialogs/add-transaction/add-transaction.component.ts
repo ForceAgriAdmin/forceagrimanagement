@@ -28,6 +28,7 @@ import { TransactionModel }      from "../../models/transactions/transaction";
 import { TransactionTypeModel }  from "../../models/transactions/transactiontype";
 import { WorkerModel }           from "../../models/workers/worker";
 import { AppUser }               from "../../models/users/user.model";
+import { firstValueFrom } from "rxjs";
 
 @Component({
   selector: "app-add-transaction",
@@ -49,6 +50,7 @@ export class AddTransactionComponent implements OnInit {
   transactionForm: FormGroup;
   transactionTypes: TransactionTypeModel[] = [];
   workers: WorkerModel[] = [];
+  worker!: WorkerModel;
   paymentGroups: PaymentGroupRecord[] = [];
   loggedInUser: AppUser = {
     uid: "",
@@ -71,11 +73,11 @@ export class AddTransactionComponent implements OnInit {
   ) {
     this.transactionForm = this.fb.group({
       function:            ["single", Validators.required],
-      operationId:         ["", Validators.required],
-      workerIds:           [[], Validators.required],
+      operationId:         ["", ],
+      workerIds:           [[],],
       paymentGroupId:      [""],             // <— new control
       transactionTypeId:   ["", Validators.required],
-      description:         ["", Validators.required],
+      description:         ["",],
       amount:              ["", [Validators.required, Validators.min(0.01)]],
     });
   }
@@ -148,8 +150,11 @@ export class AddTransactionComponent implements OnInit {
     };
 
     if (fn === "single") {
-      const arr = this.transactionForm.value.workerIds as string[];
-      tx.workerId = arr[0];
+      tx.workerId = this.transactionForm.value.workerIds;
+      this.worker = await firstValueFrom(
+          this.workersService.getWorker(tx.workerId)
+      );
+      tx.operationId = this.worker.operationId;
     } else if (fn === "bulk") {
       tx.multiWorkerId = this.transactionForm.value.workerIds as string[];
     } else {
