@@ -183,56 +183,113 @@ async printCardHtml(cfg: CardConfig) {
   private readonly CARD_H = 53.98;  // mm
 
    async printCard(cfg: CardConfig) {
-    // 1) Fetch and inline the image URL (as before)
-    const downloadUrl = await firstValueFrom(
-      this.workersService.getProfileImageUrl(cfg.worker.profileImageUrl)
-    );
-    const blob = await fetch(downloadUrl).then(r => r.blob());
-    const dataUrl = await new Promise<string>(resolve => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.readAsDataURL(blob);
-    });
-    const frontCfg: CardConfig = {
-      ...cfg,
-      worker: { ...cfg.worker, profileImageUrl: dataUrl }
-    };
+  // 1) Fetch & inline the profile image
+  const downloadUrl = await firstValueFrom(
+    this.workersService.getProfileImageUrl(cfg.worker.profileImageUrl)
+  );
+  const blob     = await fetch(downloadUrl).then(r => r.blob());
+  const dataUrl  = await new Promise<string>(resolve => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.readAsDataURL(blob);
+  });
+  const frontCfg: CardConfig = {
+    ...cfg,
+    worker: { ...cfg.worker, profileImageUrl: dataUrl }
+  };
 
-    // 2) Render front and back to PNG data-URLs
-    const frontImg = await this.renderHtmlToImage(
-      this.buildCardFront(frontCfg),
-      this.CARD_W, this.CARD_H
-    );
-    const backHtml = await this.buildCardBack(cfg);
-    const backImg  = await this.renderHtmlToImage(
-      backHtml,
-      this.CARD_W, this.CARD_H
-    );
+  // 2) Render front/back to PNG data-URLs
+  const frontImg = await this.renderHtmlToImage(
+    this.buildCardFront(frontCfg),
+    this.CARD_W, this.CARD_H
+  );
+  const backHtml = await this.buildCardBack(cfg);
+  const backImg  = await this.renderHtmlToImage(
+    backHtml,
+    this.CARD_W, this.CARD_H
+  );
 
-    // 3) Build PDF
-    const pdf = new jsPDF({
-      orientation: 'landscape',
-      unit: 'mm',
-      format: [this.CARD_W, this.CARD_H]
-    });
+  // 3) Build a single‐page PDF that’s double‐wide:
+  const totalW = this.CARD_W * 2;  // e.g. 171.2 mm
+  const totalH = this.CARD_H;      // e.g. 53.98 mm
+  const pdf = new jsPDF({
+    orientation: 'landscape',
+    unit: 'mm',
+    format: [ totalW, totalH ]
+  });
 
-    // FRONT SIDE
-    pdf.addImage(frontImg, 'PNG', 0, 0, this.CARD_W, this.CARD_H);
-    // draw a 0.5 mm border inset by 1 mm
-    pdf.setLineWidth(0.5);
-    pdf.setDrawColor(0, 0, 0);
-    pdf.rect(1, 1, this.CARD_W - 2, this.CARD_H - 2);
+  // 4) Draw front at x=0, back at x=CARD_W
+  // FRONT
+  pdf.addImage(frontImg, 'PNG', 0, 0, this.CARD_W, this.CARD_H);
+  pdf.setLineWidth(0.5).setDrawColor(0,0,0)
+     .rect(0.5, 0.5, this.CARD_W-1, this.CARD_H-1);
 
-    // BACK SIDE
-    pdf.addPage();
-    pdf.addImage(backImg, 'PNG', 0, 0, this.CARD_W, this.CARD_H);
-    pdf.setLineWidth(0.5);
-    pdf.setDrawColor(0, 0, 0);
-    pdf.rect(1, 1, this.CARD_W - 2, this.CARD_H - 2);
+  // BACK
+  pdf.addImage(backImg, 'PNG', this.CARD_W, 0, this.CARD_W, this.CARD_H);
+  pdf.setLineWidth(0.5).setDrawColor(0,0,0)
+     .rect(this.CARD_W + 0.5, 0.5, this.CARD_W-1, this.CARD_H-1);
 
-    // 4) Save
-    pdf.save(`ID_Card_${cfg.identityCard.number}.pdf`);
-  }
+  // 5) Save
+  pdf.save(`ID_Card_${cfg.identityCard.number}.pdf`);
+}
+
+async printCardOnA4(cfg: CardConfig) {
+  // 1) Fetch & inline the image
+  const downloadUrl = await firstValueFrom(
+    this.workersService.getProfileImageUrl(cfg.worker.profileImageUrl)
+  );
+  const blob    = await fetch(downloadUrl).then(r => r.blob());
+  const dataUrl = await new Promise<string>(resolve => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.readAsDataURL(blob);
+  });
+  const frontCfg: CardConfig = {
+    ...cfg,
+    worker: { ...cfg.worker, profileImageUrl: dataUrl }
+  };
+
+  // 2) Render front + back into PNGs
+  const frontImg = await this.renderHtmlToImage(
+    this.buildCardFront(frontCfg),
+    this.CARD_W, this.CARD_H
+  );
+  const backImg  = await this.renderHtmlToImage(
+    await this.buildCardBack(cfg),
+    this.CARD_W, this.CARD_H
+  );
+
+  // 3) Create A4‐landscape PDF
+  const pdf = new jsPDF({
+    unit:        'mm',
+    format:      'a4',
+    orientation: 'landscape'
+  });
+  const pageW = pdf.internal.pageSize.getWidth();   // ~297mm
+  const pageH = pdf.internal.pageSize.getHeight();  // ~210mm
+
+  // 4) Position both cards at top‐left
+  const cW     = this.CARD_W;     // 85.6 mm
+  const cH     = this.CARD_H;     // 53.98 mm
+  const margin = 10;              // 10 mm margin
+
+  const x1 = margin;              // front X
+  const y1 = margin;              // front Y
+  const x2 = x1 + cW + margin;    // back X
+  const y2 = margin;              // back Y
+
+  // 5) Draw front & back
+  pdf.addImage(frontImg, 'PNG', x1, y1, cW, cH);
+  pdf.setLineWidth(0.5).setDrawColor(0,0,0)
+     .rect(x1, y1, cW, cH);
+
+  pdf.addImage(backImg, 'PNG', x2, y2, cW, cH);
+  pdf.setLineWidth(0.5).setDrawColor(0,0,0)
+     .rect(x2, y2, cW, cH);
+
+  // 6) Save
+  pdf.save(`ID_Card_${cfg.identityCard.number}.pdf`);
+}
   private async renderHtmlToImage(html: string, wMM: number, hMM: number) {
     const wrapper = document.createElement('div');
     Object.assign(wrapper.style, {

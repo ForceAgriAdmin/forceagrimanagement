@@ -176,7 +176,7 @@ export class WorkerDetailComponent implements OnInit {
       }
 
       const cfg: CardConfig = { worker: this.worker, operation, farm, identityCard: { number: card.number } };
-      await this.printingService.printCard(cfg);
+      await this.printingService.printCardOnA4(cfg);
     }
     catch (err) {
       console.error('Print failed:', err);
