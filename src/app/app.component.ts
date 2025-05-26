@@ -13,6 +13,7 @@ import { AngularFireModule } from '@angular/fire/compat';
 import { AngularFirestoreModule } from '@angular/fire/compat/firestore';
 import { AppUser } from './models/users/user.model';
 import { Timestamp } from '@angular/fire/firestore';
+ import { registerLicense } from '@syncfusion/ej2-base';
 @Component({
   selector: 'app-root',
   imports: [
@@ -62,5 +63,6 @@ export class AppComponent implements OnInit {
       this.loggedInUser.uid = user?.uid || '';
 
     });
+     registerLicense('Ngo9BigBOggjHTQxAR8/V1NNaF5cXmBCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXtcc3RWRWNYVUBxV0pWYUA=');
   }
 }

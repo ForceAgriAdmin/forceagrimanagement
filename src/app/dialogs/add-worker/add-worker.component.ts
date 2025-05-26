@@ -91,7 +91,7 @@ end: "center"|"start"|"end"|undefined;
           .then(url => {
             const workerData = {
               ...this.workerForm.value,
-              farmId: 'fixedFarmID',   // Set automatically in the background
+              farmId: 'LRXY7Su8v0ga6U8OwxJT',   // Set automatically in the background
               currentBalance: 0,       // Always zero when adding a new worker
               profileImageUrl: url
             };

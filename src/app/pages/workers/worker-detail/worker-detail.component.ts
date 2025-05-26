@@ -156,32 +156,35 @@ export class WorkerDetailComponent implements OnInit {
         break;
 
       case 'printCard':
-  try {
-    // 1) first await the Promise to get the Observable
-    const card$ = await this.cs.getWorkerCard(this.worker.id);
-    // 2) then subscribe once via firstValueFrom()
-    const card = await firstValueFrom(card$);
-    if (!card) throw new Error('No active card found');
+    try {
+      const card$ = await this.cs.getWorkerCard(this.worker.id);
+      const card  = await firstValueFrom(card$);
+      if (!card) throw new Error('No active card found');
 
-    // 3) now you can build the config
-    const operation = this.operations.find(o => o.id === this.worker.operationId)!;
-    const farm      = this.farms.find(f => f.id === this.worker.farmId)!;
-    const cfg: CardConfig = {
-      worker: this.worker,
-      operation,
-      farm,
-      identityCard: { number: card.number }
-    };
+      // find the operation + farm
+      const operation = this.operations.find(o => o.id === this.worker.operationId);
+      const farm      = this.farms.find(f => f.id === this.worker.farmId);
 
-    await this.printingService.printCard(cfg);
-  }
-  catch (err) {
-    console.error('Print failed:', err);
-  }
-  finally {
-    this.loading = false;
-  }
-        break;
+      // ✋ check them!
+      if (!operation) {
+        console.error('Operation not loaded yet', this.worker.operationId, this.operations);
+        return; 
+      }
+      if (!farm) {
+        console.error('Farm not loaded yet', this.worker.farmId, this.farms);
+        return;
+      }
+
+      const cfg: CardConfig = { worker: this.worker, operation, farm, identityCard: { number: card.number } };
+      await this.printingService.printCard(cfg);
+    }
+    catch (err) {
+      console.error('Print failed:', err);
+    }
+    finally {
+      this.loading = false;
+    }
+    break;
     }
   }
 }

@@ -7,6 +7,7 @@ import QRCode from 'qrcode';
 import JsBarcode from 'jsbarcode';
 import { WorkersService } from './workerservice.service';
 import { firstValueFrom } from 'rxjs';
+import jspdf from 'jspdf';
 
 export interface CardConfig {
   worker: any;
@@ -65,6 +66,79 @@ export class PrintingService {
     document.body.removeChild(container);
     // --- END generatePdf ---
   }
+
+  generatePdfwww() {
+      const elementToPrint = document.getElementById('WorkerIdCard'); // Replace 'element-id' with the actual ID
+      if (elementToPrint) {
+        html2canvas(elementToPrint).then((canvas) => {
+          const pdf = new jspdf('p', 'mm', 'a4');
+          const imgData = canvas.toDataURL('image/png');
+          const imgProps = pdf.getImageProperties(imgData);
+          const pdfWidth = pdf.internal.pageSize.getWidth();
+          const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+          pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+          pdf.save('document.pdf');
+        });
+      }
+  }
+
+async printCardHtml(cfg: CardConfig) {
+  // 1) Open the tab immediately on click
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    throw new Error('Popup blocked – unable to open print window');
+  }
+
+  // 2) Now do your async work
+  const downloadUrl = await firstValueFrom(
+    this.workersService.getProfileImageUrl(cfg.worker.profileImageUrl)
+  );
+  const blobImg = await fetch(downloadUrl).then(r => r.blob());
+  const dataUrl = await new Promise<string>(resolve => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.readAsDataURL(blobImg);
+  });
+  const workerWithInlineImage = {
+    ...cfg.worker,
+    profileImageUrl: dataUrl
+  };
+
+  const front = this.buildCardFront({ ...cfg, worker: workerWithInlineImage });
+  const back  = await this.buildCardBack(cfg);
+
+  const fullHtml = `
+    <!doctype html >
+    <html>
+    <div id="WorkerIdCard">
+    <p>poes<p/>
+    <div/>
+      <head>
+        <meta charset="utf-8">
+        <title>ID Card ${cfg.identityCard.number}</title>
+        <style>
+          @page { size: ${this.CARD_W}mm ${this.CARD_H}mm; margin:0 }
+          body { margin:0; padding:0 }
+          .page {
+            width: ${this.CARD_W}mm;
+            height: ${this.CARD_H}mm;
+            box-sizing: border-box;
+            page-break-after: always;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="page">${front}</div>
+        <div class="page">${back}</div>
+      </body>
+    </html>`;
+
+   // this.generatePdfwww();
+  // 3) Write into the already-opened tab
+  printWindow.document.open();
+  (printWindow.document as any).write(fullHtml);
+  printWindow.document.close();
+}
 
   private buildReportHtml(cfg: any): string {
     const header = `
