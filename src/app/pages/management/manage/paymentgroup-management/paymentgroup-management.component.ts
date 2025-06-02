@@ -82,7 +82,7 @@ export class PaymentgroupManagementComponent implements OnInit {
         const view = groups.map(g => {
           // map workerIds → names
           const names = g.workerIds
-            .map(id => {
+            .map((id: string) => {
               const w = workers.find(x => x.id === id);
               return w
                 ? `${w.firstName} ${w.lastName}`

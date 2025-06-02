@@ -46,13 +46,15 @@ export class AddWorkerTransactionComponent {
   transaction: TransactionModel = {
     timestamp: Timestamp.now(),       
     amount: 0,                        
-    description: '',                  
-    operationId: '',   
+    description: '',
     creatorId: '',        
-    transactionTypeId: '',   
-    workerId: '',
-    function: 'single' ,
-    multiWorkerId: []          
+    transactionTypeId: '', 
+    farmId: '',  
+    workerTypesIds: [],
+    function: 'single',
+    operationIds: [], 
+    workerIds: [] ,         
+    paymentGroupIds: []          
   };
   user$: Observable<any>;
   
@@ -110,8 +112,9 @@ export class AddWorkerTransactionComponent {
       this.transaction.transactionTypeId = this.transactionForm.value.transactionTypeId,
       this.transaction.creatorId = this.loggedInUser.uid
       this.transaction.timestamp = Timestamp.now()
-      this.transaction.operationId = this.worker.operationId,
-      this.transaction.workerId = this.worker.id
+
+      this.transaction.operationIds.push(this.worker.operationId)
+      this.transaction.workerIds.push(this.worker.id)
 
       this.transactionService.createTransaction(this.transaction).then(url => {
         //TODO: Create notification alert

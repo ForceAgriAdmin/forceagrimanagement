@@ -28,6 +28,15 @@
           <input matInput formControlName="employeeNumber" required />
         </mat-form-field>
 
+         <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Worker Type</mat-label>
+          <mat-select formControlName="workerTypeId" required>
+            <mat-option *ngFor="let t of workerTypes" [value]="t.id">
+              {{ t.description }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
         <mat-form-field appearance="fill" class="full-width">
           <mat-label>Operation</mat-label>
           <mat-select formControlName="operationId" required>
@@ -38,11 +47,13 @@
         </mat-form-field>
 
         <!-- File Input: Not wrapped in a mat-form-field to avoid control errors -->
-        <div class="file-input-container">
+        
+      </div>
+
+      <div class="file-input-container">
           <label for="profileImageInput">Profile Image</label>
           <input id="profileImageInput" type="file" (change)="onFileSelected($event)" accept="image/*" />
         </div>
-      </div>
     </div>
   </form>
 </mat-dialog-content>

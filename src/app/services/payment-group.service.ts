@@ -7,16 +7,13 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
-  serverTimestamp
+  serverTimestamp,
+  Timestamp
 } from '@angular/fire/firestore';
 import { Observable, defer, from } from 'rxjs';
+import { PaymentGroupRecord } from '../models/payment-groups/payment-group-record';
 
-export interface PaymentGroupRecord {
-  id: string;
-  description: string;
-  workerIds: string[];
-  createdAt: any;
-}
+
 
 @Injectable({ providedIn: 'root' })
 export class PaymentGroupService {
@@ -46,14 +43,14 @@ export class PaymentGroupService {
       setDoc(docRef, {
         description: data.description,
         workerIds: data.workerIds,
-        createdAt: serverTimestamp()
+        createdAt: Timestamp.now()
       })
         .then(() => {
           observer.next({
             id: docRef.id,
             description: data.description,
             workerIds: data.workerIds,
-            createdAt: serverTimestamp()
+            createdAt: Timestamp.now()
           });
           observer.complete();
         })

@@ -15,7 +15,7 @@ import {
   getDoc
 } from '@angular/fire/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from '@angular/fire/storage';
-import { from, map, Observable, of, tap } from 'rxjs';
+import { catchError, forkJoin, from, map, Observable, of, tap, throwError } from 'rxjs';
 import { WorkerModel } from '../models/workers/worker';
 import { IdentityCard } from '../models/workers/identitycard';
 import { WorkerTypeModel } from '../models/workers/worker-type';
@@ -164,10 +164,41 @@ export class WorkersService {
     });
   }
 
-  getWorker(id: string): Observable<WorkerModel> {
+ getWorkersById(ids: string[]): Observable<WorkerModel[]> {
+    return runInInjectionContext(this.injector, () => {
+      const observables = ids.map(id => {
+        const docRef = doc(this.firestore, `workers/${id}`);
+        return from(getDoc(docRef)).pipe(
+          map(snapshot => {
+            if (!snapshot.exists()) {
+              return null as unknown as WorkerModel;
+            }
+            const data = snapshot.data() as Omit<WorkerModel, 'id'>;
+            return { ...data, id: snapshot.id };
+          })
+        );
+      });
+      return forkJoin(observables).pipe(
+        map(results => results.filter(w => w !== null) as WorkerModel[])
+      );
+    });
+  }
+
+ getWorker(id: string): Observable<WorkerModel> {
     return runInInjectionContext(this.injector, () => {
       const docRef = doc(this.firestore, `workers/${id}`);
-      return docData(docRef, { idField: 'id' }) as Observable<WorkerModel>;
+      return from(getDoc(docRef)).pipe(
+        map((snap) => {
+          if (!snap.exists()) {
+            throw new Error(`Worker ${id} does not exist`);
+          }
+          const data = snap.data() as Omit<WorkerModel, "id">;
+          return { ...data, id: snap.id };
+        }),
+        catchError((err) => {
+          return throwError(() => new Error(err.message || err));
+        })
+      );
     });
   }
 

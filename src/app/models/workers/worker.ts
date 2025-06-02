@@ -13,4 +13,5 @@ export interface WorkerModel {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   workerTypeId: string;
+  paymentGroupIds: string[]; 
 }

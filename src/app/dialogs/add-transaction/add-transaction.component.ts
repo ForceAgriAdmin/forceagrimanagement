@@ -22,13 +22,14 @@ import { MatButtonModule }     from "@angular/material/button";
 import { TransactionsService }   from "../../services/transactions.service";
 import { AuthService }           from "../../services/auth.service";
 import { WorkersService }        from "../../services/workerservice.service";
-import { PaymentGroupRecord, PaymentGroupService }   from "../../services/payment-group.service";
+import {PaymentGroupService }   from "../../services/payment-group.service";
 
 import { TransactionModel }      from "../../models/transactions/transaction";
 import { TransactionTypeModel }  from "../../models/transactions/transactiontype";
 import { WorkerModel }           from "../../models/workers/worker";
 import { AppUser }               from "../../models/users/user.model";
 import { firstValueFrom } from "rxjs";
+import { PaymentGroupRecord } from "../../models/payment-groups/payment-group-record";
 
 @Component({
   selector: "app-add-transaction",
@@ -126,42 +127,91 @@ export class AddTransactionComponent implements OnInit {
   }
 
   async onSubmit(): Promise<void> {
-    if (this.transactionForm.invalid) return;
+    if (this.transactionForm.invalid) {
+      return;
+    }
 
     const fn = this.transactionForm.value.function as
       | "single"
       | "bulk"
       | "payment-group";
 
-    const baseTx: Omit<TransactionModel, "workerId" | "multiWorkerId"> = {
+    const baseTx: Omit<
+      TransactionModel,
+      "workerIds" | "workerTypesIds" | "paymentGroupIds" | "operationIds"
+    > = {
       timestamp:         Timestamp.now(),
-      amount:            +this.transactionForm.value.amount,
+      amount:            this.transactionForm.value.amount,
       description:       this.transactionForm.value.description,
       transactionTypeId: this.transactionForm.value.transactionTypeId,
       creatorId:         this.loggedInUser.uid,
-      operationId:       this.transactionForm.value.operationId,
+      farmId:            this.loggedInUser.farmId,
       function:          fn,
     };
 
     const tx: TransactionModel = {
       ...baseTx,
-      workerId:      "",
-      multiWorkerId: [],
+      workerIds:       [],
+      workerTypesIds:   [],
+      paymentGroupIds: [],
+      operationIds:    [],
     };
 
     if (fn === "single") {
-      tx.workerId = this.transactionForm.value.workerIds;
-      this.worker = await firstValueFrom(
-          this.workersService.getWorker(tx.workerId)
-      );
-      tx.operationId = this.worker.operationId;
+      tx.workerIds.push(this.transactionForm.value.workerIds);
+      const id = tx.workerIds[0];
+      const w = await firstValueFrom(this.workersService.getWorker(id));
+      if (w) {
+        tx.operationIds    = [w.operationId];
+        tx.workerTypesIds   = [w.workerTypeId];
+        tx.paymentGroupIds = w.paymentGroupIds ?? [];
+      }
+
     } else if (fn === "bulk") {
-      tx.multiWorkerId = this.transactionForm.value.workerIds as string[];
+      const bulkIds = this.transactionForm.value.workerIds as string[];
+      tx.workerIds = bulkIds;
+
+      const workers = await firstValueFrom(
+        this.workersService.getWorkersById(bulkIds)
+      );
+      const opSet  = new Set<string>();
+      const wtSet  = new Set<string>();
+      const pgSet  = new Set<string>();
+
+      workers.forEach((w: WorkerModel) => {
+        opSet.add(w.operationId);
+        wtSet.add(w.workerTypeId);
+        (w.paymentGroupIds || []).forEach((pg) => pgSet.add(pg));
+      });
+
+      tx.operationIds    = Array.from(opSet);
+      tx.workerTypesIds   = Array.from(wtSet);
+      tx.paymentGroupIds = Array.from(pgSet);
+
     } else {
-      // payment-group
       const pgId = this.transactionForm.value.paymentGroupId as string;
-      const group = this.paymentGroups.find(g => g.id === pgId);
-      tx.multiWorkerId = group ? group.workerIds : [];
+      const group = this.paymentGroups.find((g) => g.id === pgId);
+      tx.workerIds = group?.workerIds || [];
+
+      if (tx.workerIds.length > 0) {
+        const workers = await firstValueFrom(
+          this.workersService.getWorkersById(tx.workerIds)
+        );
+
+        const opSet = new Set<string>();
+        const wtSet = new Set<string>();
+        const pgSet = new Set<string>();
+
+        workers.forEach((w: WorkerModel) => {
+          opSet.add(w.operationId);
+          wtSet.add(w.workerTypeId);
+          (w.paymentGroupIds || []).forEach((pg) => pgSet.add(pg));
+        });
+
+        tx.operationIds    = Array.from(opSet);
+        tx.workerTypesIds   = Array.from(wtSet);
+        tx.paymentGroupIds = Array.from(pgSet);
+      }
     }
 
     try {

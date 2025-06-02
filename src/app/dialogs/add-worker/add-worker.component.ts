@@ -6,18 +6,22 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
-
+import { Router, RouterModule, RouterOutlet } from '@angular/router';
 import { OperationModel } from '../../models/operations/operation';
 import { OperationService } from '../../services/operation.service';
 import { WorkersService } from '../../services/workerservice.service';
-import { CardService } from '../../services/card.service';
 import { CropperComponent } from '../cropper/cropper.component';
+import { AuthService } from '../../services/auth.service';
+import { AppUser } from '../../models/users/user.model';
+import { Timestamp } from '@angular/fire/firestore';
+import { WorkerTypeModel } from '../../models/workers/worker-type';
 
 @Component({
   selector: 'app-add-worker',
   standalone: true,
   imports: [
     CommonModule,
+    RouterModule,
     ReactiveFormsModule,
     MatDialogModule,
     MatFormFieldModule,
@@ -33,14 +37,23 @@ export class AddWorkerComponent implements OnInit {
   selectedFile: File | null = null;
   croppedFile: File | null = null;
   operations: OperationModel[] = [];
+  workerTypes: WorkerTypeModel[] =[];
 end: "center"|"start"|"end"|undefined;
-
+loggedInUser: AppUser = {
+        uid: '',
+        email: '',
+        displayName: '',
+        createdAt: Timestamp.now(),
+        farmId: '',
+        roles: []
+      };
   constructor(
     private fb: FormBuilder,
     private operationService: OperationService,
     private workersService: WorkersService,
-    private cardService: CardService,
+    private authService: AuthService,
     private dialog: MatDialog,
+     private router: Router,
     private dialogRef: MatDialogRef<AddWorkerComponent>
   ) {
     // Note: profileImageUrl is not in the form since that comes from file upload.
@@ -49,13 +62,24 @@ end: "center"|"start"|"end"|undefined;
       lastName: ['', Validators.required],
       idNumber: ['', Validators.required],
       employeeNumber: ['', Validators.required],
-      operationId: ['', Validators.required]
+      operationId: ['', Validators.required],
+      workerTypeId: ['', Validators.required]
     });
   }
 
   ngOnInit(): void {
+    this.authService.currentUserDoc$.subscribe(user => {
+      if (!user) {
+        this.router.navigate(['/login']);
+      } else {
+        this.loggedInUser = user;
+      }
+    });
     this.operationService.getOperations().subscribe((ops: OperationModel[]) => {
       this.operations = ops;
+    });
+     this.workersService.getWorkerTypes().subscribe((types: WorkerTypeModel[]) => {
+      this.workerTypes = types;
     });
   }
 
@@ -86,13 +110,14 @@ end: "center"|"start"|"end"|undefined;
   onSubmit(): void {
     if (this.workerForm.valid) {
       if (this.croppedFile) {
-        // Upload the image to Firebase Storage
         this.workersService.uploadProfileImage(this.croppedFile)
           .then(url => {
             const workerData = {
               ...this.workerForm.value,
-              farmId: 'LRXY7Su8v0ga6U8OwxJT',   // Set automatically in the background
-              currentBalance: 0,       // Always zero when adding a new worker
+              operationId: this.workerForm.value.operationId,
+              workerTypeId: this.workerForm.value.workerTypeId,
+              farmId: this.loggedInUser.farmId,
+              currentBalance: 0,
               profileImageUrl: url
             };
             this.dialogRef.close(workerData);

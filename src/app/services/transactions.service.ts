@@ -1,4 +1,6 @@
-import { Injectable } from '@angular/core';
+// src/app/services/transactions.service.ts
+
+import { Injectable, Injector, runInInjectionContext } from '@angular/core';
 import {
   Firestore,
   collection,
@@ -9,11 +11,9 @@ import {
   updateDoc,
   deleteDoc,
   serverTimestamp,
-  getDocs,
+  addDoc,
   query,
   where,
-  getDoc,
-  addDoc,
   orderBy
 } from '@angular/fire/firestore';
 import { from, Observable } from 'rxjs';
@@ -24,62 +24,75 @@ import { TransactionTypeModel } from '../models/transactions/transactiontype';
   providedIn: 'root'
 })
 export class TransactionsService {
+  constructor(
+    private firestore: Firestore,
+    private injector: Injector
+  ) {}
 
-  constructor(private firestore: Firestore) {}
+  // ─── Transaction CRUD ─────────────────────────────────────────────────
 
-  //private transactionsCollection = collection(this.firestore, 'transactions');
-  //private typesCollection = collection(this.firestore, 'transactionTypes');
-
-  // --- Transaction CRUD ---
-
+  /** Create a new transaction */
   createTransaction(transaction: TransactionModel): Promise<void> {
     const transactionsCol = collection(this.firestore, 'transactions');
     return addDoc(transactionsCol, transaction).then(() => {});
   }
 
-  getTransactionById(id: string): Observable<TransactionModel & { id: string }> {
+  /** Get a single transaction by its document ID */
+  getTransactionById(
+    id: string
+  ): Observable<TransactionModel & { id: string }> {
     const ref = doc(this.firestore, `transactions/${id}`);
-    return docData(ref, { idField: 'id' }) as Observable<TransactionModel & { id: string }>;
+    // wrap docData(...) inside runInInjectionContext
+    return runInInjectionContext(
+      this.injector,
+      () => docData(ref, { idField: 'id' }) as Observable<TransactionModel & { id: string }>
+    );
   }
 
+  /** Get all transactions (no filtering) */
   getTransactions(): Observable<(TransactionModel & { id: string })[]> {
     const transactionsCol = collection(this.firestore, 'transactions');
-    return collectionData(transactionsCol, { idField: 'id' }) as Observable<(TransactionModel & { id: string })[]>;
+    return runInInjectionContext(
+      this.injector,
+      () => collectionData(transactionsCol, { idField: 'id' }) as Observable<(TransactionModel & { id: string })[]>
+    );
   }
 
-  updateTransaction(id: string, data: Partial<TransactionModel>): Promise<void> {
+  /** Update an existing transaction by ID */
+  updateTransaction(
+    id: string,
+    data: Partial<TransactionModel>
+  ): Promise<void> {
     const ref = doc(this.firestore, `transactions/${id}`);
     return updateDoc(ref, data);
   }
 
+  /** Delete a transaction by ID */
   deleteTransaction(id: string): Promise<void> {
     const ref = doc(this.firestore, `transactions/${id}`);
     return deleteDoc(ref);
   }
 
-  // --- TransactionType CRUD ---
+  // ─── TransactionType CRUD ───────────────────────────────────────────────
 
+  /** Get all transaction types */
   getTransactionTypes(): Observable<(TransactionTypeModel & { id: string })[]> {
     const typesCol = collection(this.firestore, 'transactionTypes');
-    return collectionData(typesCol, { idField: 'id' }) as Observable<
-      (TransactionTypeModel & { id: string })[]
-    >;
+    return runInInjectionContext(
+      this.injector,
+      () => collectionData(typesCol, { idField: 'id' }) as Observable<(TransactionTypeModel & { id: string })[]>
+    );
   }
 
-  /**
-   * Create a new transaction type.
-   * Accepts only {name, description, isCredit} and
-   * returns an Observable you can subscribe() to.
-   */
+  /** Create a new transaction type */
   createTransactionType(data: {
     name: string;
     description: string;
     isCredit: boolean;
   }): Observable<void> {
     const typesCol = collection(this.firestore, 'transactionTypes');
-    const newRef = doc(typesCol);
     return from(
-      setDoc(newRef, {
+      setDoc(doc(typesCol), {
         ...data,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
@@ -110,39 +123,74 @@ export class TransactionsService {
     const ref = doc(this.firestore, `transactionTypes/${id}`);
     return from(deleteDoc(ref));
   }
-  // --- Query Helpers ---
 
-  getTransactionsByWorkerId(workerId: string): Observable<(TransactionModel & { id: string })[]> {
+  // ─── Query Helpers (using array-contains where appropriate) ──────────────
+
+  /**
+   * Fetch all transactions whose `workerIds` array contains the given `workerId`,
+   * ordered by `timestamp` descending.
+   */
+  getTransactionsByWorkerId(
+    workerId: string
+  ): Observable<(TransactionModel & { id: string })[]> {
     const transactionsCol = collection(this.firestore, 'transactions');
     const q = query(
       transactionsCol,
-      where('workerId', '==', workerId),
+      where('workerIds', 'array-contains', workerId),
       orderBy('timestamp', 'desc')
     );
-    return collectionData(q, { idField: 'id' }) as Observable<(TransactionModel & { id: string })[]>;
+    return runInInjectionContext(
+      this.injector,
+      () => collectionData(q, { idField: 'id' }) as Observable<(TransactionModel & { id: string })[]>
+    );
   }
 
-  getTransactionsByTransactionTypeId(typeId: string): Observable<(TransactionModel & { id: string })[]> {
+  /**
+   * Fetch all transactions whose `transactionTypeId` equals the given `typeId`,
+   * ordered by `timestamp` descending.
+   */
+  getTransactionsByTransactionTypeId(
+    typeId: string
+  ): Observable<(TransactionModel & { id: string })[]> {
     const transactionsCol = collection(this.firestore, 'transactions');
     const q = query(
       transactionsCol,
       where('transactionTypeId', '==', typeId),
       orderBy('timestamp', 'desc')
     );
-    return collectionData(q, { idField: 'id' }) as Observable<(TransactionModel & { id: string })[]>;
+    return runInInjectionContext(
+      this.injector,
+      () => collectionData(q, { idField: 'id' }) as Observable<(TransactionModel & { id: string })[]>
+    );
   }
 
-  getTransactionsByOperationId(operationId: string): Observable<(TransactionModel & { id: string })[]> {
+  /**
+   * Fetch all transactions whose `operationIds` array contains the given `operationId`,
+   * ordered by `timestamp` descending.
+   */
+  getTransactionsByOperationId(
+    operationId: string
+  ): Observable<(TransactionModel & { id: string })[]> {
     const transactionsCol = collection(this.firestore, 'transactions');
     const q = query(
       transactionsCol,
-      where('operationId', '==', operationId),
+      where('operationIds', 'array-contains', operationId),
       orderBy('timestamp', 'desc')
     );
-    return collectionData(q, { idField: 'id' }) as Observable<(TransactionModel & { id: string })[]>;
+    return runInInjectionContext(
+      this.injector,
+      () => collectionData(q, { idField: 'id' }) as Observable<(TransactionModel & { id: string })[]>
+    );
   }
 
-  getTransactionsBetweenDates(start: Date, end: Date): Observable<(TransactionModel & { id: string })[]> {
+  /**
+   * Fetch all transactions between `start` and `end` (inclusive),
+   * ordered by `timestamp` ascending.
+   */
+  getTransactionsBetweenDates(
+    start: Date,
+    end: Date
+  ): Observable<(TransactionModel & { id: string })[]> {
     const transactionsCol = collection(this.firestore, 'transactions');
     const q = query(
       transactionsCol,
@@ -150,9 +198,16 @@ export class TransactionsService {
       where('timestamp', '<=', end),
       orderBy('timestamp', 'asc')
     );
-    return collectionData(q, { idField: 'id' }) as Observable<(TransactionModel & { id: string })[]>;
+    return runInInjectionContext(
+      this.injector,
+      () => collectionData(q, { idField: 'id' }) as Observable<(TransactionModel & { id: string })[]>
+    );
   }
 
+  /**
+   * Fetch all transactions between `start` and `end` (inclusive) for a given `workerId`
+   * (using `array-contains` on `workerIds`), ordered by `timestamp` ascending.
+   */
   getTransactionsBetweenDatesForWorkerId(
     workerId: string,
     start: Date,
@@ -161,14 +216,21 @@ export class TransactionsService {
     const transactionsCol = collection(this.firestore, 'transactions');
     const q = query(
       transactionsCol,
-      where('workerId', '==', workerId),
+      where('workerIds', 'array-contains', workerId),
       where('timestamp', '>=', start),
       where('timestamp', '<=', end),
       orderBy('timestamp', 'asc')
     );
-    return collectionData(q, { idField: 'id' }) as Observable<(TransactionModel & { id: string })[]>;
+    return runInInjectionContext(
+      this.injector,
+      () => collectionData(q, { idField: 'id' }) as Observable<(TransactionModel & { id: string })[]>
+    );
   }
 
+  /**
+   * Fetch all transactions between `start` and `end` (inclusive) for a given `operationId`
+   * (using `array-contains` on `operationIds`), ordered by `timestamp` ascending.
+   */
   getTransactionsBetweenDatesForOperationId(
     operationId: string,
     start: Date,
@@ -177,14 +239,21 @@ export class TransactionsService {
     const transactionsCol = collection(this.firestore, 'transactions');
     const q = query(
       transactionsCol,
-      where('operationId', '==', operationId),
+      where('operationIds', 'array-contains', operationId),
       where('timestamp', '>=', start),
       where('timestamp', '<=', end),
       orderBy('timestamp', 'asc')
     );
-    return collectionData(q, { idField: 'id' }) as Observable<(TransactionModel & { id: string })[]>;
+    return runInInjectionContext(
+      this.injector,
+      () => collectionData(q, { idField: 'id' }) as Observable<(TransactionModel & { id: string })[]>
+    );
   }
 
+  /**
+   * Fetch all transactions between `start` and `end` (inclusive) for a given `transactionTypeId`,
+   * ordered by `timestamp` ascending.
+   */
   getTransactionsBetweenDatesForTransactionTypeId(
     typeId: string,
     start: Date,
@@ -198,7 +267,9 @@ export class TransactionsService {
       where('timestamp', '<=', end),
       orderBy('timestamp', 'asc')
     );
-    return collectionData(q, { idField: 'id' }) as Observable<(TransactionModel & { id: string })[]>;
+    return runInInjectionContext(
+      this.injector,
+      () => collectionData(q, { idField: 'id' }) as Observable<(TransactionModel & { id: string })[]>
+    );
   }
 }
-
