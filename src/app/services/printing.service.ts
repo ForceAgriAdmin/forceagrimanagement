@@ -140,6 +140,8 @@ async printCardHtml(cfg: CardConfig) {
   printWindow.document.close();
 }
 
+
+
   private buildReportHtml(cfg: any): string {
     const header = `
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px">

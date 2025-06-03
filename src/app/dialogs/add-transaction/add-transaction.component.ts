@@ -1,38 +1,38 @@
 // src/app/dialogs/add-transaction/add-transaction.component.ts
-import { Component, Inject, OnInit } from "@angular/core";
+import { Component, Inject, OnInit } from '@angular/core';
 import {
   FormBuilder,
   FormGroup,
   ReactiveFormsModule,
   Validators,
-} from "@angular/forms";
-import { Timestamp } from "@angular/fire/firestore";
-import { Router, RouterModule } from "@angular/router";
+} from '@angular/forms';
+import { Timestamp } from '@angular/fire/firestore';
+import { Router, RouterModule } from '@angular/router';
 import {
   MAT_DIALOG_DATA,
   MatDialogModule,
   MatDialogRef,
-} from "@angular/material/dialog";
-import { CommonModule } from "@angular/common";
-import { MatFormFieldModule }  from "@angular/material/form-field";
-import { MatInputModule }      from "@angular/material/input";
-import { MatSelectModule }     from "@angular/material/select";
-import { MatButtonModule }     from "@angular/material/button";
+} from '@angular/material/dialog';
+import { CommonModule } from '@angular/common';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatButtonModule } from '@angular/material/button';
 
-import { TransactionsService }   from "../../services/transactions.service";
-import { AuthService }           from "../../services/auth.service";
-import { WorkersService }        from "../../services/workerservice.service";
-import {PaymentGroupService }   from "../../services/payment-group.service";
+import { TransactionsService } from '../../services/transactions.service';
+import { AuthService } from '../../services/auth.service';
+import { WorkersService } from '../../services/workerservice.service';
+import { PaymentGroupService } from '../../services/payment-group.service';
 
-import { TransactionModel }      from "../../models/transactions/transaction";
-import { TransactionTypeModel }  from "../../models/transactions/transactiontype";
-import { WorkerModel }           from "../../models/workers/worker";
-import { AppUser }               from "../../models/users/user.model";
-import { firstValueFrom } from "rxjs";
-import { PaymentGroupRecord } from "../../models/payment-groups/payment-group-record";
+import { TransactionModel } from '../../models/transactions/transaction';
+import { TransactionTypeModel } from '../../models/transactions/transactiontype';
+import { WorkerModel } from '../../models/workers/worker';
+import { AppUser } from '../../models/users/user.model';
+import { firstValueFrom } from 'rxjs';
+import { PaymentGroupRecord } from '../../models/payment-groups/payment-group-record';
 
 @Component({
-  selector: "app-add-transaction",
+  selector: 'app-add-transaction',
   standalone: true,
   imports: [
     CommonModule,
@@ -44,8 +44,8 @@ import { PaymentGroupRecord } from "../../models/payment-groups/payment-group-re
     MatSelectModule,
     MatButtonModule,
   ],
-  templateUrl: "./add-transaction.component.html",
-  styleUrls: ["./add-transaction.component.scss"],
+  templateUrl: './add-transaction.component.html',
+  styleUrls: ['./add-transaction.component.scss'],
 })
 export class AddTransactionComponent implements OnInit {
   transactionForm: FormGroup;
@@ -54,12 +54,12 @@ export class AddTransactionComponent implements OnInit {
   worker!: WorkerModel;
   paymentGroups: PaymentGroupRecord[] = [];
   loggedInUser: AppUser = {
-    uid: "",
-    email: "",
-    displayName: "",
+    uid: '',
+    email: '',
+    displayName: '',
     createdAt: Timestamp.now(),
-    farmId: "",
-    roles: []
+    farmId: '',
+    roles: [],
   };
 
   constructor(
@@ -73,18 +73,18 @@ export class AddTransactionComponent implements OnInit {
     private pgService: PaymentGroupService
   ) {
     this.transactionForm = this.fb.group({
-      function:            ["single", Validators.required],
-      operationId:         ["", ],
-      workerIds:           [[],],
-      paymentGroupId:      [""],             // <— new control
-      transactionTypeId:   ["", Validators.required],
-      description:         ["",],
-      amount:              ["", [Validators.required, Validators.min(0.01)]],
+      function: ['single', Validators.required],
+      operationId: [''],
+      workerIds: [[]],
+      paymentGroupId: [''], // <— new control
+      transactionTypeId: ['', Validators.required],
+      description: [''],
+      amount: ['', [Validators.required, Validators.min(0.01)]],
     });
   }
 
   ngOnInit(): void {
-   this.authService.currentUserDoc$.subscribe(user => {
+    this.authService.currentUserDoc$.subscribe((user) => {
       if (!user) {
         this.router.navigate(['/login']);
       } else {
@@ -95,25 +95,21 @@ export class AddTransactionComponent implements OnInit {
     // load dropdown data
     this.transactionService
       .getTransactionTypes()
-      .subscribe(types => (this.transactionTypes = types));
+      .subscribe((types) => (this.transactionTypes = types));
 
-    this.workersService
-      .getWorkers()
-      .subscribe(ws => (this.workers = ws));
+    this.workersService.getWorkers().subscribe((ws) => (this.workers = ws));
 
-    this.pgService
-      .getGroups()
-      .subscribe(pg => (this.paymentGroups = pg));
+    this.pgService.getGroups().subscribe((pg) => (this.paymentGroups = pg));
 
     // adjust validations when function changes
-    this.transactionForm.get("function")!.valueChanges.subscribe(fn => {
-      const wCtrl = this.transactionForm.get("workerIds")!;
-      const pgCtrl = this.transactionForm.get("paymentGroupId")!;
+    this.transactionForm.get('function')!.valueChanges.subscribe((fn) => {
+      const wCtrl = this.transactionForm.get('workerIds')!;
+      const pgCtrl = this.transactionForm.get('paymentGroupId')!;
 
-      if (fn === "bulk") {
+      if (fn === 'bulk') {
         wCtrl.setValidators([Validators.required]);
         pgCtrl.clearValidators();
-      } else if (fn === "payment-group") {
+      } else if (fn === 'payment-group') {
         wCtrl.clearValidators();
         pgCtrl.setValidators([Validators.required]);
       } else {
@@ -132,51 +128,50 @@ export class AddTransactionComponent implements OnInit {
     }
 
     const fn = this.transactionForm.value.function as
-      | "single"
-      | "bulk"
-      | "payment-group";
+      | 'single'
+      | 'bulk'
+      | 'payment-group';
 
     const baseTx: Omit<
       TransactionModel,
-      "workerIds" | "workerTypesIds" | "paymentGroupIds" | "operationIds"
+      'workerIds' | 'workerTypesIds' | 'paymentGroupIds' | 'operationIds'
     > = {
-      timestamp:         Timestamp.now(),
-      amount:            this.transactionForm.value.amount,
-      description:       this.transactionForm.value.description,
+      timestamp: Timestamp.now(),
+      amount: this.transactionForm.value.amount,
+      description: this.transactionForm.value.description,
       transactionTypeId: this.transactionForm.value.transactionTypeId,
-      creatorId:         this.loggedInUser.uid,
-      farmId:            this.loggedInUser.farmId,
-      function:          fn,
+      creatorId: this.loggedInUser.uid,
+      farmId: this.loggedInUser.farmId,
+      function: fn,
     };
 
     const tx: TransactionModel = {
       ...baseTx,
-      workerIds:       [],
-      workerTypesIds:   [],
+      workerIds: [],
+      workerTypesIds: [],
       paymentGroupIds: [],
-      operationIds:    [],
+      operationIds: [],
     };
 
-    if (fn === "single") {
+    if (fn === 'single') {
       tx.workerIds.push(this.transactionForm.value.workerIds);
       const id = tx.workerIds[0];
       const w = await firstValueFrom(this.workersService.getWorker(id));
       if (w) {
-        tx.operationIds    = [w.operationId];
-        tx.workerTypesIds   = [w.workerTypeId];
+        tx.operationIds = [w.operationId];
+        tx.workerTypesIds = [w.workerTypeId];
         tx.paymentGroupIds = w.paymentGroupIds ?? [];
       }
-
-    } else if (fn === "bulk") {
+    } else if (fn === 'bulk') {
       const bulkIds = this.transactionForm.value.workerIds as string[];
       tx.workerIds = bulkIds;
 
       const workers = await firstValueFrom(
         this.workersService.getWorkersById(bulkIds)
       );
-      const opSet  = new Set<string>();
-      const wtSet  = new Set<string>();
-      const pgSet  = new Set<string>();
+      const opSet = new Set<string>();
+      const wtSet = new Set<string>();
+      const pgSet = new Set<string>();
 
       workers.forEach((w: WorkerModel) => {
         opSet.add(w.operationId);
@@ -184,10 +179,9 @@ export class AddTransactionComponent implements OnInit {
         (w.paymentGroupIds || []).forEach((pg) => pgSet.add(pg));
       });
 
-      tx.operationIds    = Array.from(opSet);
-      tx.workerTypesIds   = Array.from(wtSet);
+      tx.operationIds = Array.from(opSet);
+      tx.workerTypesIds = Array.from(wtSet);
       tx.paymentGroupIds = Array.from(pgSet);
-
     } else {
       const pgId = this.transactionForm.value.paymentGroupId as string;
       const group = this.paymentGroups.find((g) => g.id === pgId);
@@ -208,17 +202,34 @@ export class AddTransactionComponent implements OnInit {
           (w.paymentGroupIds || []).forEach((pg) => pgSet.add(pg));
         });
 
-        tx.operationIds    = Array.from(opSet);
-        tx.workerTypesIds   = Array.from(wtSet);
+        tx.operationIds = Array.from(opSet);
+        tx.workerTypesIds = Array.from(wtSet);
         tx.paymentGroupIds = Array.from(pgSet);
       }
     }
 
     try {
-      await this.transactionService.createTransaction(tx);
+      const newTxId = await this.transactionService.createTransaction(tx);
+
+      if (tx.function === 'single') {
+        const createdTx = await firstValueFrom(
+          this.transactionService.getTransactionById(newTxId)
+        );
+
+        const typeRec = await firstValueFrom(
+          this.transactionService.getTransactionTypeById(
+            createdTx.transactionTypeId
+          )
+        );
+
+        if (typeRec.name.toLowerCase() === 'shop') {
+          await this.transactionService.PrintTransactionSlip(createdTx);
+        }
+      }
+
       this.dialogRef.close(true);
     } catch (err) {
-      console.error("Create Transaction failed", err);
+      console.error('Create Transaction failed', err);
     }
   }
 
