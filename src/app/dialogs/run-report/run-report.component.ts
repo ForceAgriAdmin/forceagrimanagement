@@ -38,7 +38,7 @@ import {
 import * as XLSX from 'xlsx';
 
 import { AppReport }              from '../../models/reports/appreport';
-import { Association }           from '../../models/reports/association';
+import { Association }            from '../../models/reports/association';
 import { PrintingService }        from '../../services/printing.service';
 
 import { TransactionsService }    from '../../services/transactions.service';
@@ -46,7 +46,8 @@ import { WorkersService }         from '../../services/workerservice.service';
 import { OperationService }       from '../../services/operation.service';
 import { FarmService }            from '../../services/farm.service';
 import { PaymentGroupService }    from '../../services/payment-group.service';
-import { WorkerModel } from '../../models/workers/worker';
+import { WorkerModel }            from '../../models/workers/worker';
+import { OperationModel }         from '../../models/operations/operation';
 
 // Property map so we know which keys come from Worker docs
 const PROPERTY_MAP: Record<Association, { key: string; label: string }[]> = {
@@ -102,6 +103,9 @@ export class RunReportComponent implements OnInit {
     PaymentGroup: []
   };
 
+  // We'll also cache all operations so we can look up profileImageUrl later
+  operations: OperationModel[] = [];
+
   end: 'center'|'start'|'end'|undefined;
 
   constructor(
@@ -136,7 +140,10 @@ export class RunReportComponent implements OnInit {
       this.ws.getWorkers().subscribe(r => (this.lookup.Workers = r));
     }
     if (this.report.associations.includes('Operations')) {
-      this.ops.getOperations().subscribe(r => (this.lookup.Operations = r));
+      this.ops.getOperations().subscribe(r => {
+        this.lookup.Operations = r;
+        this.operations = r;   // cache all OperationModel[]
+      });
     }
     if (this.report.associations.includes('WorkerType')) {
       this.ws.getWorkerTypes().subscribe(r => (this.lookup.WorkerType = r));
@@ -150,237 +157,410 @@ export class RunReportComponent implements OnInit {
   }
 
   /**
-   * 1) Fetch all transactions in the given date range (no other Firestore filters).
-   * 2) In‐memory filter any “Workers” selection (old‐ or new‐schema fields).
-   * 3) Collect every unique workerId still in the filtered list.
-   * 4) Batch‐fetch all those Worker docs into workerCache.
-   * 5) Build each final row, setting row[key] = tx[key] or workerData[key] as needed.
+   * 1) Read date range from the form
+   * 2) Query Firestore for all transactions in that date range
+   * 3) Map to rawTxs[]
+   * 4) Gather unique IDs (workers, operations, transaction types)
+   * 5) Batch‐fetch Worker docs → workerCache
+   * 6) Batch‐fetch Operation docs → opMap
+   * 7) Batch‐fetch TransactionType docs → txTypeMap
+   * 8) In‐memory filter by selected associations
+   * 9) Build “detailedRows” (one row per worker per tx), attaching:
+   *      row.__workerId   (for grouping)
+   *      row._operationId (the first operation ID, for dynamic logo)
+   * 10) If summary: group by __workerId, sum amounts, strip helpers, return
+   * 11) If not summary: strip helpers and return all rows
    */
   private async fetchFilteredRows(): Promise<any[]> {
-  // 1) Read date range from the form
-  const fromDate: Date = this.form.value.from;
-  const toDate:   Date = this.form.value.to;
-  console.debug('fetchFilteredRows():', { fromDate, toDate, form: this.form.value });
+    // 1) Read date range
+    const fromDate: Date = this.form.value.from;
+    const toDate:   Date = this.form.value.to;
 
-  // 2) Query Firestore for all transactions in that date range (no other filters here)
-  const txCol = collection(this.afs, 'transactions');
-  const dateQ = query(
-    txCol,
-    where('timestamp', '>=', fromDate),
-    where('timestamp', '<=', toDate)
-  );
-  const txSnapshot = await runInInjectionContext(this.injector, () => getDocs(dateQ));
-  console.debug(`  → fetched ${txSnapshot.size} transactions (date only).`);
-
-  // 3) Map to a simple array of { id, data: tx }
-  const rawTxs = txSnapshot.docs.map(docSnap => ({
-    id: docSnap.id,
-    data: docSnap.data() as any
-  }));
-
-  // 4) Gather every unique worker ID from rawTxs (old or new schema):
-  //    – new schema: tx.workerIds[]
-  //    – old schema: tx.workerId  or tx.multiWorkerIds[]
-  const workerIdSet = new Set<string>();
-  rawTxs.forEach(({ data: tx }) => {
-    if (Array.isArray(tx.workerIds) && tx.workerIds.length) {
-      tx.workerIds.forEach((wid: string) => workerIdSet.add(wid));
-    } else if (typeof tx.workerId === 'string' && tx.workerId) {
-      workerIdSet.add(tx.workerId);
-    } else if (Array.isArray(tx.multiWorkerIds) && tx.multiWorkerIds.length) {
-      tx.multiWorkerIds.forEach((wid: string) => workerIdSet.add(wid));
-    }
-  });
-  console.debug('  → unique worker IDs to fetch:', Array.from(workerIdSet));
-
-  // 5) Batch‐fetch all Worker docs in chunks of 10 IDs at a time
-  //    Use a Map<workerId, WorkerModel|null> as our cache
-  const workerCache = new Map<string, WorkerModel|null>();
-  const allWorkerIds = Array.from(workerIdSet);
-  // Break into chunks of 10
-  for (let i = 0; i < allWorkerIds.length; i += 10) {
-    const chunk = allWorkerIds.slice(i, i + 10);
-    // Firestore query: where(documentId(), 'in', chunk)
-    const wq = query(
-      collection(this.afs, 'workers'),
-      where(documentId(), 'in', chunk)
+    // 2) Query Firestore for all transactions in that date range
+    const txCol = collection(this.afs, 'transactions');
+    const dateQ = query(
+      txCol,
+      where('timestamp', '>=', fromDate),
+      where('timestamp', '<=', toDate)
     );
-    const wSnapshot = await runInInjectionContext(this.injector, () => getDocs(wq));
-    // Populate cache with the returned docs
-    wSnapshot.docs.forEach(docSnap => {
-      workerCache.set(docSnap.id, docSnap.data() as WorkerModel);
-    });
-    // For any ID in this chunk not returned, set null
-    chunk.forEach((wid) => {
-      if (!workerCache.has(wid)) {
-        workerCache.set(wid, null);
+    const txSnapshot = await runInInjectionContext(this.injector, () => getDocs(dateQ));
+
+    // 3) Map to rawTxs[]
+    const rawTxs = txSnapshot.docs.map(docSnap => ({
+      id: docSnap.id,
+      data: docSnap.data() as any
+    }));
+
+    // 4) Gather unique IDs: workers, operations, transaction types
+    const workerIdSet = new Set<string>();
+    const opIdSet     = new Set<string>();
+    const txTypeIdSet = new Set<string>();
+
+    rawTxs.forEach(({ data: tx }) => {
+      // 4a) Worker IDs
+      if (Array.isArray(tx.workerIds) && tx.workerIds.length) {
+        tx.workerIds.forEach((wid: string) => workerIdSet.add(wid));
+      }
+      else if (typeof tx.workerId === 'string' && tx.workerId) {
+        workerIdSet.add(tx.workerId);
+      }
+      else if (Array.isArray(tx.multiWorkerIds) && tx.multiWorkerIds.length) {
+        tx.multiWorkerIds.forEach((wid: string) => workerIdSet.add(wid));
+      }
+
+      // 4b) Operation IDs
+      if (Array.isArray(tx.operationIds) && tx.operationIds.length) {
+        tx.operationIds.forEach((oid: string) => opIdSet.add(oid));
+      }
+      else if (typeof tx.operationId === 'string' && tx.operationId) {
+        opIdSet.add(tx.operationId);
+      }
+
+      // 4c) TransactionType ID
+      if (typeof tx.transactionTypeId === 'string' && tx.transactionTypeId) {
+        txTypeIdSet.add(tx.transactionTypeId);
       }
     });
-  }
-  console.debug('  → workerCache populated (batches of 10):', workerCache);
 
-  // 6) Now: In‐memory filter of rawTxs by each selected association
-  //    The five possible associations are: Workers, Operations, WorkerType,
-  //    TransactionType, PaymentGroup
-  const filteredTxs = rawTxs.filter(({ id: txId, data: tx }) => {
-    // Build the “effective” arrays/IDs for this transaction (old or new schema):
-    let effectiveWorkerIds: string[] = [];
-    if (Array.isArray(tx.workerIds) && tx.workerIds.length) {
-      effectiveWorkerIds = tx.workerIds;
-    } else if (typeof tx.workerId === 'string' && tx.workerId) {
-      effectiveWorkerIds = [tx.workerId];
-    } else if (Array.isArray(tx.multiWorkerIds) && tx.multiWorkerIds.length) {
-      effectiveWorkerIds = tx.multiWorkerIds;
-    }
-
-    let effectiveOpIds: string[] = [];
-    if (Array.isArray(tx.operationIds) && tx.operationIds.length) {
-      effectiveOpIds = tx.operationIds;
-    } else if (typeof tx.operationId === 'string' && tx.operationId) {
-      effectiveOpIds = [tx.operationId];
-    }
-
-    const effectiveTTypeId: string | null = tx.transactionTypeId || null;
-    const effectivePGIds: string[] = Array.isArray(tx.paymentGroupIds)
-      ? tx.paymentGroupIds
-      : [];
-
-    // For each chosen association in the report, check if this tx passes:
-    for (const a of this.report.associations) {
-      const selected: string[] = this.form.value[a] || [];
-      if (!Array.isArray(selected) || selected.length === 0) {
-        // If user didn’t pick any IDs for this association, skip it
-        continue;
-      }
-
-      switch (a) {
-        case 'Workers': {
-          // tx must have at least one worker ID in common with selected[]
-          if (!selected.some((wid: string) => effectiveWorkerIds.includes(wid))) {
-            return false;
-          }
-          break;
-        }
-        case 'Operations': {
-          // tx must have at least one operation ID in common with selected[]
-          if (!selected.some((oid: string) => effectiveOpIds.includes(oid))) {
-            return false;
-          }
-          break;
-        }
-        case 'WorkerType': {
-          // At least one of this tx’s worker IDs must map (via workerCache)
-          // to a workerTypeId that is in selected[]
-          const matchesWorkerType = effectiveWorkerIds.some((wid: string) => {
-            const wd = workerCache.get(wid);
-            return wd?.workerTypeId && selected.includes(wd.workerTypeId);
-          });
-          if (!matchesWorkerType) {
-            return false;
-          }
-          break;
-        }
-        case 'TransactionType': {
-          // tx.transactionTypeId must be in selected[]
-          if (!effectiveTTypeId || !selected.includes(effectiveTTypeId)) {
-            return false;
-          }
-          break;
-        }
-        case 'PaymentGroup': {
-          // tx.paymentGroupIds must share at least one ID with selected[]
-          if (!effectivePGIds.some((pgid: string) => selected.includes(pgid))) {
-            return false;
-          }
-          break;
-        }
-        // If future associations arise, handle them here
-      }
-    }
-
-    // If we never returned false, this transaction passes all chosen‐association filters
-    return true;
-  });
-  console.debug(`  → after dynamic in‐memory filter: ${filteredTxs.length} transactions remain.`);
-
-  // 7) Finally: Build all output rows. For each transaction, output one row per worker.
-  //    If a transaction has no worker IDs, we still output exactly one row so that
-  //    transaction fields (amount, function, etc.) show up.
-  const allRows: any[] = [];
-  filteredTxs.forEach(({ id: txId, data: tx }) => {
-    // Recompute effectiveWorkerIds
-    let effectiveWorkerIds: string[] = [];
-    if (Array.isArray(tx.workerIds) && tx.workerIds.length) {
-      effectiveWorkerIds = tx.workerIds;
-    } else if (typeof tx.workerId === 'string' && tx.workerId) {
-      effectiveWorkerIds = [tx.workerId];
-    } else if (Array.isArray(tx.multiWorkerIds) && tx.multiWorkerIds.length) {
-      effectiveWorkerIds = tx.multiWorkerIds;
-    }
-
-    // If no worker IDs, produce exactly one “blank‐worker” row
-    const loopIds = effectiveWorkerIds.length ? effectiveWorkerIds : [null as any];
-
-    loopIds.forEach((wid) => {
-      const row: any = {};
-      this.report.fields.forEach((f) => {
-        const key = f.key;
-
-        // (a) If the transaction itself contains this key, use it:
-        if (key in tx) {
-          row[key] = (tx as any)[key];
-          return;
-        }
-
-        // (b) If key is a “Workers” property (firstName, employeeNumber, etc.),
-        //     pull from workerCache
-        const wProps = PROPERTY_MAP.Workers.map((p) => p.key);
-        if (wProps.includes(key)) {
-          if (wid && workerCache.has(wid)) {
-            const wd = workerCache.get(wid);
-            row[key] = wd ? (wd as any)[key] : '';
-          } else {
-            row[key] = '';
-          }
-          return;
-        }
-
-        // (c) If you also want “Operations” or “WorkerType” or “PaymentGroup” fields
-        //     in the future, you’d check PROPERTY_MAP.Operations, PROPERTY_MAP.WorkerType, etc.
-        //     For now, leave them blank:
-        row[key] = '';
+    // 5) Batch‐fetch Worker docs → workerCache
+    const workerCache = new Map<string, WorkerModel|null>();
+    const allWorkerIds = Array.from(workerIdSet);
+    for (let i = 0; i < allWorkerIds.length; i += 10) {
+      const chunk = allWorkerIds.slice(i, i + 10);
+      const wq = query(
+        collection(this.afs, 'workers'),
+        where(documentId(), 'in', chunk)
+      );
+      const wSnapshot = await runInInjectionContext(this.injector, () => getDocs(wq));
+      wSnapshot.docs.forEach(docSnap => {
+        workerCache.set(docSnap.id, docSnap.data() as WorkerModel);
       });
-      allRows.push(row);
+      chunk.forEach((wid) => {
+        if (!workerCache.has(wid)) {
+          workerCache.set(wid, null);
+        }
+      });
+    }
+
+    // 6) Batch‐fetch Operation docs → opMap
+    const opMap = new Map<string, OperationModel>();
+    const allOpIds = Array.from(opIdSet);
+    for (let i = 0; i < allOpIds.length; i += 10) {
+      const chunk = allOpIds.slice(i, i + 10);
+      const oq = query(
+        collection(this.afs, 'operations'),
+        where(documentId(), 'in', chunk)
+      );
+      const oSnapshot = await runInInjectionContext(this.injector, () => getDocs(oq));
+      oSnapshot.docs.forEach(docSnap => {
+        opMap.set(docSnap.id, docSnap.data() as OperationModel);
+      });
+      chunk.forEach((oid) => {
+        if (!opMap.has(oid)) {
+          // Placeholder if not found
+          opMap.set(oid, {
+            id: oid,
+            name: '',
+            description: '',
+            createdAt: null as any,
+            updatedAt: null as any,
+            profileImageUrl: ''
+          });
+        }
+      });
+    }
+
+    // 7) Batch‐fetch TransactionType docs → txTypeMap
+    const txTypeMap = new Map<string, { id: string; name: string }>();
+    const allTxTypeIds = Array.from(txTypeIdSet);
+    for (let i = 0; i < allTxTypeIds.length; i += 10) {
+      const chunk = allTxTypeIds.slice(i, i + 10);
+      const tQ = query(
+        collection(this.afs, 'transactionTypes'),
+        where(documentId(), 'in', chunk)
+      );
+      const tSnapshot = await runInInjectionContext(this.injector, () => getDocs(tQ));
+      tSnapshot.docs.forEach(docSnap => {
+        txTypeMap.set(docSnap.id, docSnap.data() as { id: string; name: string });
+      });
+      chunk.forEach((ttid) => {
+        if (!txTypeMap.has(ttid)) {
+          txTypeMap.set(ttid, { id: ttid, name: '' });
+        }
+      });
+    }
+
+    // 8) In‐memory filter of rawTxs by each selected association
+    const filteredTxs = rawTxs.filter(({ data: tx }) => {
+      // 8a) Compute effectiveWorkerIds
+      let effectiveWorkerIds: string[] = [];
+      if (Array.isArray(tx.workerIds) && tx.workerIds.length) {
+        effectiveWorkerIds = tx.workerIds;
+      }
+      else if (typeof tx.workerId === 'string' && tx.workerId) {
+        effectiveWorkerIds = [tx.workerId];
+      }
+      else if (Array.isArray(tx.multiWorkerIds) && tx.multiWorkerIds.length) {
+        effectiveWorkerIds = tx.multiWorkerIds;
+      }
+
+      // 8b) Compute effectiveOpIds
+      let effectiveOpIds: string[] = [];
+      if (Array.isArray(tx.operationIds) && tx.operationIds.length) {
+        effectiveOpIds = tx.operationIds;
+      }
+      else if (typeof tx.operationId === 'string' && tx.operationId) {
+        effectiveOpIds = [tx.operationId];
+      }
+
+      // 8c) Effective transactionTypeId
+      const effectiveTTypeId: string | null = tx.transactionTypeId || null;
+
+      // 8d) Effective PaymentGroupIds (not always used)
+      const effectivePGIds: string[] = Array.isArray(tx.paymentGroupIds)
+        ? tx.paymentGroupIds
+        : [];
+
+      // 8e) Check each chosen association filter:
+      for (const a of this.report.associations) {
+        const selected: string[] = this.form.value[a] || [];
+        if (!Array.isArray(selected) || selected.length === 0) {
+          continue; // no filter on this association
+        }
+
+        switch (a) {
+          case 'Workers':
+            if (!selected.some((wid: string) => effectiveWorkerIds.includes(wid))) {
+              return false;
+            }
+            break;
+
+          case 'Operations':
+            if (!selected.some((oid: string) => effectiveOpIds.includes(oid))) {
+              return false;
+            }
+            break;
+
+          case 'WorkerType':
+            const matchesWorkerType = effectiveWorkerIds.some((wid: string) => {
+              const wd = workerCache.get(wid);
+              return wd?.workerTypeId && selected.includes(wd.workerTypeId);
+            });
+            if (!matchesWorkerType) {
+              return false;
+            }
+            break;
+
+          case 'TransactionType':
+            if (!effectiveTTypeId || !selected.includes(effectiveTTypeId)) {
+              return false;
+            }
+            break;
+
+          case 'PaymentGroup':
+            if (!effectivePGIds.some((pgid: string) => selected.includes(pgid))) {
+              return false;
+            }
+            break;
+        }
+      }
+
+      return true;
     });
-  });
 
-  console.debug(`  → built ${allRows.length} output row(s).`);
-  return allRows;
-}
+    // 9) Build every “detailed” row (one per worker per transaction),
+    //    attaching hidden __workerId and _operationId
+    const detailedRows: any[] = [];
+    filteredTxs.forEach(({ data: tx }) => {
+      // 9a) Recompute effectiveWorkerIds
+      let effectiveWorkerIds: string[] = [];
+      if (Array.isArray(tx.workerIds) && tx.workerIds.length) {
+        effectiveWorkerIds = tx.workerIds;
+      }
+      else if (typeof tx.workerId === 'string' && tx.workerId) {
+        effectiveWorkerIds = [tx.workerId];
+      }
+      else if (Array.isArray(tx.multiWorkerIds) && tx.multiWorkerIds.length) {
+        effectiveWorkerIds = tx.multiWorkerIds;
+      }
 
+      // 9b) Recompute effectiveOpIds
+      let effectiveOpIds: string[] = [];
+      if (Array.isArray(tx.operationIds) && tx.operationIds.length) {
+        effectiveOpIds = tx.operationIds;
+      }
+      else if (typeof tx.operationId === 'string' && tx.operationId) {
+        effectiveOpIds = [tx.operationId];
+      }
 
-  /** Export as PDF (just passes row[key]→cell) */
+      // 9c) Determine the “first” operation ID (or null if none)
+      const firstOpId: string | null = (effectiveOpIds.length ? effectiveOpIds[0] : null);
+
+      // 9d) Recompute effectiveTTypeId & effectivePGIds (as above)
+      const effectiveTTypeId: string | null = tx.transactionTypeId || null;
+      const effectivePGIds: string[] = Array.isArray(tx.paymentGroupIds)
+        ? tx.paymentGroupIds
+        : [];
+
+      // If no worker IDs, still output one “blank‐worker” row
+      const loopIds = effectiveWorkerIds.length ? effectiveWorkerIds : [null as any];
+
+      loopIds.forEach((wid) => {
+        const row: any = {};
+
+        // 9e) Fill in each field from this.report.fields
+        this.report.fields.forEach((f) => {
+          const key = f.key;
+
+          // If key is a direct tx property except operationId/transactionTypeId, copy it:
+          if (key in tx && key !== 'operationId' && key !== 'transactionTypeId') {
+            row[key] = tx[key];
+            return;
+          }
+
+          // If key === 'operationId', replace with opMap.get(firstOpId)?.name
+          if (key === 'operationId') {
+            if (firstOpId) {
+              row[key] = opMap.get(firstOpId)?.name || '';
+            } else {
+              row[key] = '';
+            }
+            return;
+          }
+
+          // If key === 'transactionTypeId', replace with txTypeMap lookup
+          if (key === 'transactionTypeId') {
+            if (typeof tx.transactionTypeId === 'string') {
+              row[key] = txTypeMap.get(tx.transactionTypeId)?.name || '';
+            } else {
+              row[key] = '';
+            }
+            return;
+          }
+
+          // If key is one of the Worker properties, pull from workerCache
+          const wProps = PROPERTY_MAP.Workers.map((p) => p.key);
+          if (wProps.includes(key)) {
+            if (wid && workerCache.has(wid)) {
+              const wd = workerCache.get(wid);
+              row[key] = wd ? (wd as any)[key] : '';
+            } else {
+              row[key] = '';
+            }
+            return;
+          }
+
+          // Any other key (Operation Description, WorkerType, PaymentGroup, etc.) remains blank:
+          row[key] = '';
+        });
+
+        // 9f) Attach hidden helper fields:
+        (row as any).__workerId   = wid;
+        (row as any)._operationId = firstOpId;
+
+        detailedRows.push(row);
+      });
+    });
+
+    // 10) If summary === true, group by __workerId and sum the “amount”
+    if (this.report.summary) {
+      const summaryMap = new Map<string, any>();
+
+      detailedRows.forEach((row) => {
+        const wid = (row as any).__workerId as string | null;
+        const groupingKey = wid || '__no_worker__';
+
+        if (!summaryMap.has(groupingKey)) {
+          // First time seeing this worker: clone & parse amount
+          const cloned = { ...row };
+          const rawAmt = cloned.amount;
+          const parsed = typeof rawAmt === 'number'
+            ? rawAmt
+            : parseFloat(rawAmt) || 0;
+          cloned.amount = parsed;
+          summaryMap.set(groupingKey, cloned);
+        } else {
+          // Add this row’s amount onto the existing sum
+          const existing = summaryMap.get(groupingKey);
+          const rawAmt = row.amount;
+          const parsed = typeof rawAmt === 'number'
+            ? rawAmt
+            : parseFloat(rawAmt) || 0;
+          existing.amount += parsed;
+        }
+      });
+
+      // Convert Map → array, delete helpers, return
+      const summarized: any[] = [];
+      summaryMap.forEach((val) => {
+        delete val.__workerId;
+        delete val._operationId;
+        summarized.push(val);
+      });
+      return summarized;
+    }
+
+    // 11) If summary === false, strip helpers and return all rows
+    const cleaned = detailedRows.map(r => {
+      const copy = { ...r };
+      delete copy.__workerId;
+      delete copy._operationId;
+      return copy;
+    });
+    return cleaned;
+  }
+
+  /**
+   * Helper that returns the “detailedRows” array before we strip
+   * out __workerId and _operationId. We copy exactly the code from
+   * fetchFilteredRows() up through where we push into detailedRows[], 
+   * then return that detailedRows[] as-is (with helpers intact).
+   */
+
+  /** Export as PDF (determines logoUrl dynamically) */
   async exportPDF() {
-    const rows = await this.fetchFilteredRows();
-    const cols = this.report.fields.map((f) => ({ label: f.label, key: f.key }));
+    // 1) Get detailed rows WITH helpers (_operationId)
+    const detailedWithIds: any[] = await this.getDetailedRowsWithIds();
 
-    const logo = '/assets/anebfarming.jpg';
+    // 2) Strip out __workerId and _operationId for the final “rows” array
+    const rows = detailedWithIds.map(r => {
+      const copy = { ...r };
+      delete copy.__workerId;
+      delete copy._operationId;
+      return copy;
+    });
+
+    // 3) Determine logoUrl from the first row’s _operationId
+    let logoUrl = '/assets/anebfarming.jpg'; // fallback static logo
+    if (detailedWithIds.length > 0) {
+      const firstOpId = detailedWithIds[0]._operationId as string | null;
+      if (firstOpId) {
+        const op = this.operations.find(o => o.id === firstOpId);
+        if (op && op.profileImageUrl) {
+          logoUrl = op.profileImageUrl;
+        }
+      }
+    }
+
+    // 4) Build columns & metadata
+    const cols = this.report.fields.map((f) => ({ label: f.label, key: f.key }));
     const from = this.form.value.from;
     const to   = this.form.value.to;
     const name = this.report.name.replace(/\s+/g, '_');
 
+    // 5) Call generatePdf() with dynamic logoUrl
     await this.printSvc.generatePdf({
       reportName: this.report.name,
       from,
       to,
-      logoUrl: logo,
+      logoUrl,
       columns: cols,
       rows,
       fileName: `Report_${name}_${formatDate(from)}-${formatDate(to)}`
     });
   }
 
-  /** Export as Excel */
+  /** Export as Excel (unchanged) */
   async exportExcel() {
     const rows = await this.fetchFilteredRows();
     const ws: XLSX.WorkSheet = XLSX.utils.json_to_sheet(rows);
@@ -389,12 +569,314 @@ export class RunReportComponent implements OnInit {
     XLSX.writeFile(wb, `${this.report.name}.xlsx`);
   }
 
+  /** Close dialog (unchanged) */
   close() {
     this.dialogRef.close();
   }
+
+  /**
+   * Helper: returns “detailedRows” with __workerId + _operationId still intact.
+   * We simply re-run the same code from fetchFilteredRows() up through row creation.
+   */
+  private async getDetailedRowsWithIds(): Promise<any[]> {
+    // This method is identical to the first half of fetchFilteredRows(),
+    // including building detailedRows[] with __workerId and _operationId,
+    // but does NOT strip them. Return that array.
+
+    // 1) Read date range
+    const fromDate: Date = this.form.value.from;
+    const toDate:   Date = this.form.value.to;
+
+    // 2) Query Firestore
+    const txCol = collection(this.afs, 'transactions');
+    const dateQ = query(
+      txCol,
+      where('timestamp', '>=', fromDate),
+      where('timestamp', '<=', toDate)
+    );
+    const txSnapshot = await runInInjectionContext(this.injector, () => getDocs(dateQ));
+
+    // 3) rawTxs
+    const rawTxs = txSnapshot.docs.map(docSnap => ({
+      id: docSnap.id,
+      data: docSnap.data() as any
+    }));
+
+    // 4) Gather IDs
+    const workerIdSet = new Set<string>();
+    const opIdSet     = new Set<string>();
+    const txTypeIdSet = new Set<string>();
+
+    rawTxs.forEach(({ data: tx }) => {
+      // 4a) Worker IDs
+      if (Array.isArray(tx.workerIds) && tx.workerIds.length) {
+        tx.workerIds.forEach((wid: string) => workerIdSet.add(wid));
+      }
+      else if (typeof tx.workerId === 'string' && tx.workerId) {
+        workerIdSet.add(tx.workerId);
+      }
+      else if (Array.isArray(tx.multiWorkerIds) && tx.multiWorkerIds.length) {
+        tx.multiWorkerIds.forEach((wid: string) => workerIdSet.add(wid));
+      }
+
+      // 4b) Operation IDs
+      if (Array.isArray(tx.operationIds) && tx.operationIds.length) {
+        tx.operationIds.forEach((oid: string) => opIdSet.add(oid));
+      }
+      else if (typeof tx.operationId === 'string' && tx.operationId) {
+        opIdSet.add(tx.operationId);
+      }
+
+      // 4c) TransactionType ID
+      if (typeof tx.transactionTypeId === 'string' && tx.transactionTypeId) {
+        txTypeIdSet.add(tx.transactionTypeId);
+      }
+    });
+
+    // 5) Batch‐fetch Worker docs
+    const workerCache = new Map<string, WorkerModel|null>();
+    const allWorkerIds = Array.from(workerIdSet);
+    for (let i = 0; i < allWorkerIds.length; i += 10) {
+      const chunk = allWorkerIds.slice(i, i + 10);
+      const wq = query(
+        collection(this.afs, 'workers'),
+        where(documentId(), 'in', chunk)
+      );
+      const wSnapshot = await runInInjectionContext(this.injector, () => getDocs(wq));
+      wSnapshot.docs.forEach(docSnap => {
+        workerCache.set(docSnap.id, docSnap.data() as WorkerModel);
+      });
+      chunk.forEach((wid) => {
+        if (!workerCache.has(wid)) {
+          workerCache.set(wid, null);
+        }
+      });
+    }
+
+    // 6) Batch‐fetch Operation docs → opMap
+    const opMap = new Map<string, OperationModel>();
+    const allOpIds = Array.from(opIdSet);
+    for (let i = 0; i < allOpIds.length; i += 10) {
+      const chunk = allOpIds.slice(i, i + 10);
+      const oq = query(
+        collection(this.afs, 'operations'),
+        where(documentId(), 'in', chunk)
+      );
+      const oSnapshot = await runInInjectionContext(this.injector, () => getDocs(oq));
+      oSnapshot.docs.forEach(docSnap => {
+        opMap.set(docSnap.id, docSnap.data() as OperationModel);
+      });
+      chunk.forEach((oid) => {
+        if (!opMap.has(oid)) {
+          opMap.set(oid, {
+            id: oid,
+            name: '',
+            description: '',
+            createdAt: null as any,
+            updatedAt: null as any,
+            profileImageUrl: ''
+          });
+        }
+      });
+    }
+
+    // 7) Batch‐fetch TransactionType docs → txTypeMap
+    const txTypeMap = new Map<string, { id: string; name: string }>();
+    const allTxTypeIds = Array.from(txTypeIdSet);
+    for (let i = 0; i < allTxTypeIds.length; i += 10) {
+      const chunk = allTxTypeIds.slice(i, i + 10);
+      const tQ = query(
+        collection(this.afs, 'transactionTypes'),
+        where(documentId(), 'in', chunk)
+      );
+      const tSnapshot = await runInInjectionContext(this.injector, () => getDocs(tQ));
+      tSnapshot.docs.forEach(docSnap => {
+        txTypeMap.set(docSnap.id, docSnap.data() as { id: string; name: string });
+      });
+      chunk.forEach((ttid) => {
+        if (!txTypeMap.has(ttid)) {
+          txTypeMap.set(ttid, { id: ttid, name: '' });
+        }
+      });
+    }
+
+    // 8) In‐memory filter of rawTxs by each selected association
+    const filteredTxs = rawTxs.filter(({ data: tx }) => {
+      // 8a) effectiveWorkerIds
+      let effectiveWorkerIds: string[] = [];
+      if (Array.isArray(tx.workerIds) && tx.workerIds.length) {
+        effectiveWorkerIds = tx.workerIds;
+      }
+      else if (typeof tx.workerId === 'string' && tx.workerId) {
+        effectiveWorkerIds = [tx.workerId];
+      }
+      else if (Array.isArray(tx.multiWorkerIds) && tx.multiWorkerIds.length) {
+        effectiveWorkerIds = tx.multiWorkerIds;
+      }
+
+      // 8b) effectiveOpIds
+      let effectiveOpIds: string[] = [];
+      if (Array.isArray(tx.operationIds) && tx.operationIds.length) {
+        effectiveOpIds = tx.operationIds;
+      }
+      else if (typeof tx.operationId === 'string' && tx.operationId) {
+        effectiveOpIds = [tx.operationId];
+      }
+
+      // 8c) effectiveTTypeId
+      const effectiveTTypeId: string | null = tx.transactionTypeId || null;
+
+      // 8d) effectivePGIds
+      const effectivePGIds: string[] = Array.isArray(tx.paymentGroupIds)
+        ? tx.paymentGroupIds
+        : [];
+
+      // 8e) Check chosen associations
+      for (const a of this.report.associations) {
+        const selected: string[] = this.form.value[a] || [];
+        if (!Array.isArray(selected) || selected.length === 0) {
+          continue;
+        }
+
+        switch (a) {
+          case 'Workers':
+            if (!selected.some((wid: string) => effectiveWorkerIds.includes(wid))) {
+              return false;
+            }
+            break;
+
+          case 'Operations':
+            if (!selected.some((oid: string) => effectiveOpIds.includes(oid))) {
+              return false;
+            }
+            break;
+
+          case 'WorkerType':
+            const matchesWorkerType = effectiveWorkerIds.some((wid: string) => {
+              const wd = workerCache.get(wid);
+              return wd?.workerTypeId && selected.includes(wd.workerTypeId);
+            });
+            if (!matchesWorkerType) {
+              return false;
+            }
+            break;
+
+          case 'TransactionType':
+            if (!effectiveTTypeId || !selected.includes(effectiveTTypeId)) {
+              return false;
+            }
+            break;
+
+          case 'PaymentGroup':
+            if (!effectivePGIds.some((pgid: string) => selected.includes(pgid))) {
+              return false;
+            }
+            break;
+        }
+      }
+
+      return true;
+    });
+
+    // 9) Build “detailed” rows, attaching __workerId + _operationId
+    const detailedRows: any[] = [];
+    filteredTxs.forEach(({ data: tx }) => {
+      // 9a) effectiveWorkerIds
+      let effectiveWorkerIds: string[] = [];
+      if (Array.isArray(tx.workerIds) && tx.workerIds.length) {
+        effectiveWorkerIds = tx.workerIds;
+      }
+      else if (typeof tx.workerId === 'string' && tx.workerId) {
+        effectiveWorkerIds = [tx.workerId];
+      }
+      else if (Array.isArray(tx.multiWorkerIds) && tx.multiWorkerIds.length) {
+        effectiveWorkerIds = tx.multiWorkerIds;
+      }
+
+      // 9b) effectiveOpIds
+      let effectiveOpIds: string[] = [];
+      if (Array.isArray(tx.operationIds) && tx.operationIds.length) {
+        effectiveOpIds = tx.operationIds;
+      }
+      else if (typeof tx.operationId === 'string' && tx.operationId) {
+        effectiveOpIds = [tx.operationId];
+      }
+
+      // 9c) firstOpId
+      const firstOpId: string | null = (effectiveOpIds.length ? effectiveOpIds[0] : null);
+
+      // 9d) effectiveTTypeId & effectivePGIds
+      const effectiveTTypeId: string | null = tx.transactionTypeId || null;
+      const effectivePGIds: string[] = Array.isArray(tx.paymentGroupIds)
+        ? tx.paymentGroupIds
+        : [];
+
+      // If no worker IDs, still produce a “blank‐worker” row
+      const loopIds = effectiveWorkerIds.length ? effectiveWorkerIds : [null as any];
+
+      loopIds.forEach((wid) => {
+        const row: any = {};
+
+        // 9e) Fill each field from this.report.fields
+        this.report.fields.forEach((f) => {
+          const key = f.key;
+
+          // If direct tx property except operationId/transactionTypeId, copy it
+          if (key in tx && key !== 'operationId' && key !== 'transactionTypeId') {
+            row[key] = tx[key];
+            return;
+          }
+
+          // If key === 'operationId', replace with opMap.get(firstOpId)?.name
+          if (key === 'operationId') {
+            if (firstOpId) {
+              row[key] = opMap.get(firstOpId)?.name || '';
+            } else {
+              row[key] = '';
+            }
+            return;
+          }
+
+          // If key === 'transactionTypeId', replace with txTypeMap lookup
+          if (key === 'transactionTypeId') {
+            if (typeof tx.transactionTypeId === 'string') {
+              row[key] = txTypeMap.get(tx.transactionTypeId)?.name || '';
+            } else {
+              row[key] = '';
+            }
+            return;
+          }
+
+          // If key is one of the Worker properties, pull from workerCache
+          const wProps = PROPERTY_MAP.Workers.map((p) => p.key);
+          if (wProps.includes(key)) {
+            if (wid && workerCache.has(wid)) {
+              const wd = workerCache.get(wid);
+              row[key] = wd ? (wd as any)[key] : '';
+            } else {
+              row[key] = '';
+            }
+            return;
+          }
+
+          // Otherwise, blank
+          row[key] = '';
+        });
+
+        // 9f) Attach helpers:
+        (row as any).__workerId   = wid;
+        (row as any)._operationId = firstOpId;
+
+        detailedRows.push(row);
+      });
+    });
+
+    // Return the array WITH helpers still intact
+    return detailedRows;
+  }
 }
 
-/** Format a Date as YYYYMMDD (used for fileName) */
+/** Helper to format a Date as YYYYMMDD (used in fileName) */
 function formatDate(d: Date): string {
   const yyyy = d.getFullYear();
   const mm   = String(d.getMonth() + 1).padStart(2, '0');

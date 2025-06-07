@@ -5,5 +5,6 @@ export interface OperationModel {
     description: string;
     name: string;
     createdAt: Timestamp;
-      updatedAt: Timestamp;
+    updatedAt: Timestamp;
+    profileImageUrl: string;
 }

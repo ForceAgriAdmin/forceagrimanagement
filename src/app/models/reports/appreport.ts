@@ -10,4 +10,5 @@ export interface AppReport {
   fields: FieldConfig[];
   createdAt: Timestamp;
   updatedAt: Timestamp;
+  summary: Boolean;
 }

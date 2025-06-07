@@ -21,7 +21,7 @@ import { MatFormFieldModule }     from '@angular/material/form-field';
 import { MatInputModule }         from '@angular/material/input';
 import { MatSelectModule }        from '@angular/material/select';
 import { MatButtonModule }        from '@angular/material/button';
-
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { AppReport }              from '../../models/reports/appreport';
 import { ReportsService }         from '../../services/report.service';
 import { Association }            from '../../models/reports/association';
@@ -83,7 +83,8 @@ const PROPERTY_MAP: Record<Association, { key: string; label: string }[]> = {
     MatInputModule,
     MatSelectModule,
     MatButtonModule,
-    MatIconModule
+    MatIconModule,
+    MatSlideToggleModule
   ],
   templateUrl: './add-report.component.html',
   styleUrls: ['./add-report.component.scss']
@@ -106,6 +107,7 @@ export class AddReportComponent implements OnInit {
       name:         [this.data?.name || '', Validators.required],
       description:  [this.data?.description || ''],
       associations: [this.data?.associations || [], Validators.required],
+      summary: [this.data?.summary ?? false],
       fields:       this.fb.array(
         (this.data?.fields || []).map(f =>
           this.fb.group({
@@ -174,7 +176,8 @@ export class AddReportComponent implements OnInit {
       name:         v.name,
       description:  v.description,
       associations: v.associations,
-      fields:       v.fields
+      fields:       v.fields,
+      summary:      v.summary
     };
 
     const obs = this.data

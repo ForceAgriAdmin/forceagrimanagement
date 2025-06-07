@@ -2,8 +2,10 @@
 <h2 mat-dialog-title>
   {{ isEdit ? 'Edit' : 'Add' }} Operation
 </h2>
+
 <form [formGroup]="form" (ngSubmit)="save()">
   <mat-dialog-content>
+    <!-- Name field -->
     <mat-form-field appearance="fill" class="full-width">
       <mat-label>Name</mat-label>
       <input matInput formControlName="name" />
@@ -12,16 +14,41 @@
       </mat-error>
     </mat-form-field>
 
-    <mat-form-field appearance="fill" class="full-width">
+    <!-- Description field -->
+    <mat-form-field appearance="fill" class="full-width" style="margin-top:12px;">
       <mat-label>Description</mat-label>
       <input matInput formControlName="description" />
       <mat-error *ngIf="form.get('description')?.hasError('required')">
         Description is required
       </mat-error>
     </mat-form-field>
+
+    <!-- File Input to pick (or replace) the profile image -->
+    <div class="full-width file-input-container" style="margin-top:16px;">
+      <label for="operationImageInput" style="display:block; margin-bottom:4px;">
+        Profile Image (optional)
+      </label>
+      <input
+        id="operationImageInput"
+        type="file"
+        accept="image/*"
+        (change)="onFileSelected($event)"
+      />
+    </div>
+
+    <!-- Preview Section: either existing URL or freshly cropped -->
+    <div *ngIf="existingProfileUrl || croppedBase64" class="preview" style="margin-top:16px;">
+      <h4 style="margin:0 0 8px 0; font-size:14px;">
+        {{ croppedBase64 ? 'Cropped Preview' : 'Current Profile Image' }}
+      </h4>
+      <img
+        [src]="(croppedBase64 || existingProfileUrl)!"
+        style="max-width:100px; max-height:100px; border-radius:4px; object-fit:cover;"
+      />
+    </div>
   </mat-dialog-content>
 
-  <mat-dialog-actions [align]="end">
+  <mat-dialog-actions [align]="end" style="margin-top:16px;">
     <button mat-button type="button" (click)="cancel()">Cancel</button>
     <button
       mat-flat-button

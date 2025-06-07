@@ -1,4 +1,6 @@
-import { Injectable, Injector, runInInjectionContext } from '@angular/core';
+// src/app/services/operation.service.ts
+
+import { Injectable } from '@angular/core';
 import {
   Firestore,
   collection,
@@ -10,6 +12,14 @@ import {
   deleteDoc,
   serverTimestamp
 } from '@angular/fire/firestore';
+
+import {
+  Storage,
+  ref,
+  uploadBytes,
+  getDownloadURL
+} from '@angular/fire/storage';
+
 import { Observable } from 'rxjs';
 import { OperationModel } from '../models/operations/operation';
 
@@ -17,72 +27,81 @@ import { OperationModel } from '../models/operations/operation';
   providedIn: 'root'
 })
 export class OperationService {
-  constructor(private firestore: Firestore, private injector: Injector) {}
+  constructor(
+    private firestore: Firestore,
+    private storage: Storage
+  ) {}
 
+  /**
+   * Return an Observable that emits all OperationModel[] in the 'operations' collection.
+   */
   getOperations(): Observable<OperationModel[]> {
-    return runInInjectionContext(this.injector, () => {
-      const operationsCollection = collection(this.firestore, 'operations');
-      return collectionData(operationsCollection, { idField: 'id' }) as Observable<OperationModel[]>;
-    });
+    const opsCol = collection(this.firestore, 'operations');
+    return collectionData(opsCol, { idField: 'id' }) as Observable<OperationModel[]>;
   }
 
+  /**
+   * Return an Observable that emits a single OperationModel by ID.
+   */
   getOperation(id: string): Observable<OperationModel | undefined> {
-    return runInInjectionContext(this.injector, () => {
-      const operationDoc = doc(this.firestore, `operations/${id}`);
-      return docData(operationDoc, { idField: 'id' }) as Observable<OperationModel>;
-    });
+    const opDoc = doc(this.firestore, `operations/${id}`);
+    return docData(opDoc, { idField: 'id' }) as Observable<OperationModel>;
   }
 
-  // addOperation(operation: Omit<OperationModel, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> {
-  //   const operationsCollection = collection(this.firestore, 'operations');
-  //   const operationDocRef = doc(operationsCollection);
-  //   const id = operationDocRef.id;
-    
-  //   const newOperation: OperationModel = {
-  //     id,
-  //     ...operation,
-  //     createdAt: serverTimestamp() as any,
-  //     updatedAt: serverTimestamp() as any,
-  //   };
-    
-  //   return setDoc(operationDocRef, newOperation);
-  // }
+  /**
+   * Upload a File to Firebase Storage under "operationProfiles/" and return its download URL.
+   */
+  async uploadProfileImage(file: File): Promise<string> {
+    const timestamp = Date.now();
+    const filePath = `operationProfiles/${timestamp}_${file.name}`;
+    const storageRef = ref(this.storage, filePath);
 
-   addOperation(
+    // Upload the raw bytes
+    await uploadBytes(storageRef, file);
+
+    // Get and return the publicly accessible URL
+    return getDownloadURL(storageRef);
+  }
+
+  /**
+   * Add a new Operation document. Returns a Promise that resolves to the newly created OperationModel.
+   */
+  addOperation(
     operation: Omit<OperationModel, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<OperationModel> {
-    const col = collection(this.firestore, 'operations');
-    const ref = doc(col);
-    const id = ref.id;
+    const opsCol = collection(this.firestore, 'operations');
+    const newDocRef = doc(opsCol);
+    const id = newDocRef.id;
+
     const newOp: OperationModel = {
       id,
       ...operation,
       createdAt: serverTimestamp() as any,
       updatedAt: serverTimestamp() as any
     };
-    return setDoc(ref, newOp).then(() => newOp);
+
+    return setDoc(newDocRef, newOp).then(() => newOp);
   }
 
+  /**
+   * Update an existing Operation document by ID. Provided fields in `op` are merged;
+   * updatedAt is always set to serverTimestamp().
+   */
   updateOperation(
     op: Partial<OperationModel> & { id: string }
   ): Promise<void> {
-    const ref = doc(this.firestore, `operations/${op.id}`);
-    return updateDoc(ref, {
+    const opDoc = doc(this.firestore, `operations/${op.id}`);
+    return updateDoc(opDoc, {
       ...op,
       updatedAt: serverTimestamp() as any
     });
   }
-  // updateOperation(operation: Partial<OperationModel> & { id: string }): Promise<void> {
-  //   const operationDoc = doc(this.firestore, `operations/${operation.id}`);
-  //   const updateData = {
-  //     ...operation,
-  //     updatedAt: serverTimestamp() as any
-  //   };
-  //   return updateDoc(operationDoc, updateData);
-  // }
 
+  /**
+   * Delete an Operation by its ID.
+   */
   deleteOperation(id: string): Promise<void> {
-    const operationDoc = doc(this.firestore, `operations/${id}`);
-    return deleteDoc(operationDoc);
+    const opDoc = doc(this.firestore, `operations/${id}`);
+    return deleteDoc(opDoc);
   }
 }
