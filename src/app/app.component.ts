@@ -34,10 +34,10 @@ import { Timestamp } from '@angular/fire/firestore';
 export class AppComponent implements OnInit {
   title = 'ForceAgri Management';
   menuItems: MenuItem[] = [
-    { icon: 'dashboard', label: 'Dashboard', route: 'dashboard' },
-    { icon: 'person', label: 'Workers', route: 'workers' },
-    { icon: 'money', label: 'Transaction', route: 'transactions' },
-    {icon :'settings',label:'Manage',route: 'manage'}
+    { icon: 'dashboard', label: 'Dashboard', route: 'dashboard',eventIdentifier:''  },
+    { icon: 'person', label: 'Workers', route: 'workers' ,eventIdentifier:'' },
+    { icon: 'money', label: 'Transaction', route: 'transactions',eventIdentifier:''  },
+    {icon :'settings',label:'Manage',route: 'manage',eventIdentifier:'' }
   ];
   user$: Observable<any>;
 

@@ -20,12 +20,12 @@ export class ManageComponent {
 childActive: boolean = false;
 
   cards: MenuItem[] = [
-    { icon: 'people_add', label: 'Users', route: '/manage/users' },
-    { icon: 'apartment', label: 'Operations', route: '/manage/operations' },
-    { icon: 'people', label: 'Worker Types', route: '/manage/workers' },
-    { icon: 'payments', label: 'Transaction Types', route: '/manage/transactions' },
-    { icon: 'people_group', label: 'Payment Groups', route: '/manage/payment-groups' },
-    { icon: 'summarize', label: 'Reports', route: '/manage/reports' }
+    { icon: 'people_add', label: 'Users', route: '/manage/users',eventIdentifier:'' },
+    { icon: 'apartment', label: 'Operations', route: '/manage/operations',eventIdentifier:''  },
+    { icon: 'people', label: 'Worker Types', route: '/manage/workers' ,eventIdentifier:'' },
+    { icon: 'payments', label: 'Transaction Types', route: '/manage/transactions',eventIdentifier:''  },
+    { icon: 'people_group', label: 'Payment Groups', route: '/manage/payment-groups',eventIdentifier:''  },
+    { icon: 'summarize', label: 'Reports', route: '/manage/reports',eventIdentifier:''  }
     
 
   ];
