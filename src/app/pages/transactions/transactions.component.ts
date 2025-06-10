@@ -41,12 +41,14 @@ export class TransactionsComponent {
       label: 'List',
       route: '/transactions/list',
       eventIdentifier: '',
+      roles: []
     },
     {
       icon: 'payments',
       label: 'New',
       route: '/',
       eventIdentifier: 'addTransaction',
+      roles: ['SuperAdmin','Admin'] 
     },
     //{ icon: 'summarize', label: 'Reports', route: '/transactions/reports' }
   ];

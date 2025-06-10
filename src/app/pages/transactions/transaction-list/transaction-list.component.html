@@ -20,6 +20,7 @@
   ></app-force-search>
 
   <app-force-button
+    *appHasRole="['SuperAdmin','Admin']"
     label="Add Transaction"
     icon="add"
     (action)="onAddNewTransaction()"

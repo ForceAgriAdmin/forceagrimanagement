@@ -1,4 +1,4 @@
-<mat-card class="menu-item-card" (click)="onCardClick()">
+<mat-card *appHasRole="roles" class="menu-item-card" (click)="onCardClick()">
     <mat-card-content>
       <div class="icon-container">
         <mat-icon>{{ data.icon }}</mat-icon>

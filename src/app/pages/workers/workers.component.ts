@@ -25,9 +25,8 @@ export class WorkersComponent {
 notifications: NotificationMessage[] = [];
   message!: NotificationMessage;
   cards: MenuItem[] = [
-    { icon: 'list', label: 'List', route: '/workers/list',eventIdentifier:'' },
-    { icon: 'person_add', label: 'New', route: '/' ,eventIdentifier:'addWorker'},
-    //{ icon: 'summarize', label: 'Reports', route: '/workers/reports' }
+    { icon: 'list', label: 'List', route: '/workers/list',eventIdentifier:'',roles: [] },
+    { icon: 'person_add', label: 'New', route: '/' ,eventIdentifier:'addWorker',roles:[]}
   ];
 
   constructor(

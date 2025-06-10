@@ -14,6 +14,7 @@ import { AngularFirestoreModule } from '@angular/fire/compat/firestore';
 import { AppUser } from './models/users/user.model';
 import { Timestamp } from '@angular/fire/firestore';
  import { registerLicense } from '@syncfusion/ej2-base';
+import { HasRoleDirective } from './directives/has-role.directive';
 @Component({
   selector: 'app-root',
   imports: [
@@ -26,7 +27,8 @@ import { Timestamp } from '@angular/fire/firestore';
     MatToolbarModule,
     MatSidenavModule,
     MatIconModule,
-    MatListModule
+    MatListModule,
+    HasRoleDirective
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
@@ -34,10 +36,10 @@ import { Timestamp } from '@angular/fire/firestore';
 export class AppComponent implements OnInit {
   title = 'ForceAgri Management';
   menuItems: MenuItem[] = [
-    { icon: 'dashboard', label: 'Dashboard', route: 'dashboard',eventIdentifier:''  },
-    { icon: 'person', label: 'Workers', route: 'workers' ,eventIdentifier:'' },
-    { icon: 'money', label: 'Transaction', route: 'transactions',eventIdentifier:''  },
-    {icon :'settings',label:'Manage',route: 'manage',eventIdentifier:'' }
+    { icon: 'dashboard', label: 'Dashboard', route: 'dashboard',eventIdentifier:'',roles: ['SuperAdmin','Admin','Manager','User']},
+    { icon: 'person', label: 'Workers', route: 'workers' ,eventIdentifier:'',roles: ['SuperAdmin','Admin','Manager','User'] },
+    { icon: 'money', label: 'Transaction', route: 'transactions',eventIdentifier:'',roles: ['SuperAdmin','Admin','Manager','User']},
+    {icon :'settings',label:'Manage',route: 'manage',eventIdentifier:'',roles: ['SuperAdmin','Admin']  }
   ];
   user$: Observable<any>;
 

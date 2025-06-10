@@ -63,9 +63,9 @@ notifications: { id: string; severity: string; message: string }[] = [];
   ) {}
 
   ngOnInit() {
-    this.authService.currentUserRoles$.subscribe(roles =>
-  console.log('🔥 currentUserRoles$ =', roles)
-);
+//     this.authService.currentUserRoles$.subscribe(roles =>
+//   console.log('🔥 currentUserRoles$ =', roles)
+// );
     // same pattern as your Transactions filter
     this.dataSource.filterPredicate = (
       u: AppUser,

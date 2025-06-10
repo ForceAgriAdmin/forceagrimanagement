@@ -6,9 +6,9 @@
       <a routerLink="/manage" routerLinkActive="active">manage</a> /
     </nav>
   </div>
-  <ng-container *ngIf="!childActive">
-    <div class="menu-card-list">
-      <app-menucard *ngFor="let card of cards" [data]="card"></app-menucard>
+  <ng-container *ngIf="!childActive" >
+    <div class="menu-card-list" >
+      <app-menucard [roles]="card.roles" *ngFor="let card of cards" [data]="card"></app-menucard>
     </div>
   </ng-container>
   <router-outlet (activate)="onActivate($event)" (deactivate)="onDeactivate($event)"></router-outlet>

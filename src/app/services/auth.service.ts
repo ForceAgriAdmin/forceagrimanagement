@@ -7,7 +7,8 @@ import {
   signOut,
   createUserWithEmailAndPassword,
   updateProfile,
-  User as FirebaseUser
+  User as FirebaseUser,
+  sendPasswordResetEmail
 } from '@angular/fire/auth';
 import {
   Firestore,
@@ -22,6 +23,7 @@ import {
 } from '@angular/fire/firestore';
 import {
   Observable,
+  catchError,
   defer,
   from,
   map,
@@ -71,9 +73,27 @@ export class AuthService {
     })
   );
 
-  login(email: string, password: string): Observable<any> {
-    return from(signInWithEmailAndPassword(this.auth, email, password));
-  }
+  login(email: string, password: string): Observable<boolean> {
+  return from(signInWithEmailAndPassword(this.auth, email, password)).pipe(
+    map(() => true), // Sign-in successful
+    catchError((error) => {
+      console.error('Login failed', error);
+      return of(false); // Sign-in failed
+    })
+  );
+}
+
+ resetPassword(email: string): Observable<boolean> {
+  return from(sendPasswordResetEmail(this.auth, email)).pipe(
+    map(() => true), // Sign-in successful
+    catchError((error) => {
+      console.error('Send Reset email failed', error);
+      return of(false); // Sign-in failed
+    })
+  );
+}
+
+
 
   logout(): Promise<void> {
     return signOut(this.auth);

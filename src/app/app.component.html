@@ -17,15 +17,12 @@
     opened>
       <mat-nav-list>
         @for (item of menuItems; track $index) {
-          <a mat-list-item  [routerLink]="item.route">
-            <mat-icon>{{ item.icon }}</mat-icon>
-            <span>{{ item.label }}</span>
-          </a>
+
+            <a mat-list-item *appHasRole="item.roles" [routerLink]="item.route">
+              <mat-icon>{{ item.icon }}</mat-icon>
+              <span>{{ item.label }}</span>
+            </a>
         }
-        <!-- <a mat-list-item *ngFor="let item of menuItems" [routerLink]="item.route">
-          <mat-icon>{{ item.icon }}</mat-icon>
-          <span>{{ item.label }}</span>
-        </a> -->
       </mat-nav-list>
     </mat-sidenav>
     <mat-sidenav-content>
