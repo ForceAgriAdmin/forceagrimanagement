@@ -8,8 +8,13 @@
     </nav>
   </div>
   <ng-container *ngIf="!childActive">
+    <ng-template ngFor let-item [ngForOf]="notifications" let-i="index" >
+    <ejs-message id={{item.id}} severity={{item.severity}}>{{item.message}}</ejs-message>
+    <br/>
+    <br/>
+  </ng-template>
     <div class="menu-card-list">
-      <app-menucard *ngFor="let card of cards" [data]="card"></app-menucard>
+      <app-menucard *ngFor="let card of cards" [data]="card" (cardClicked)="handleCardClick($event)"></app-menucard>
     </div>
   </ng-container>
   <router-outlet (activate)="onActivate($event)" (deactivate)="onDeactivate($event)"></router-outlet>

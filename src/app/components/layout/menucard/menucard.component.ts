@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { MenuItem } from '../../../models/layout/menuitem';
 import { Router } from '@angular/router';
 import {MatCardModule} from '@angular/material/card'
@@ -14,10 +14,15 @@ import { MatIconModule } from '@angular/material/icon';
 })
 export class MenucardComponent {
   @Input() data!: MenuItem;
+   @Output() cardClicked = new EventEmitter<MenuItem>();
 
   constructor(private router: Router) {}
 
   onCardClick() {
-    this.router.navigate([this.data.route]);
+    if(this.data.route != '/')
+    {
+      this.router.navigate([this.data.route]);
+    }
+     this.cardClicked.emit(this.data);
   }
 }

@@ -129,9 +129,12 @@ export class WorkerslistComponent implements OnInit{
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-         this.workersService.addWorker(result).then(() => { 
-            
-          });
+          this.message = {
+                  id: 'msg_success',
+                  severity: 'Success',
+                  message: 'Worker Added Successful',
+                };
+                this.notifications.push(this.message);
       }
     });
   }
