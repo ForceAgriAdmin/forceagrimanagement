@@ -50,6 +50,7 @@ import {
 } from '@angular/fire/firestore';
 import { HasRoleDirective } from '../../../directives/has-role.directive';
 import { NotificationService } from '../../../services/notification.service';
+import { EditTransactionComponent } from '../../../dialogs/edit-transaction/edit-transaction.component';
 
 interface TransactionView {
   employeeNumber: string;
@@ -60,7 +61,7 @@ interface TransactionView {
   amount: number;
   createdAt: Date;
   updatedAt: Date;
-  _raw: TransactionModel;
+  raw: TransactionModel;
 }
 
 @Component({
@@ -184,7 +185,7 @@ export class TransactionListComponent implements OnInit {
               createdAt: tx.timestamp.toDate(),
               updatedAt:
                 (tx as any).updatedAt?.toDate() || tx.timestamp.toDate(),
-              _raw: tx
+              raw: tx
             });
           }
         });
@@ -221,9 +222,30 @@ export class TransactionListComponent implements OnInit {
     });
   }
 
-  edit(row: TransactionView) {
-    // Open edit dialog if needed
-  }
+ edit(row: TransactionView) {
+  const dialogRef = this.dialog.open(EditTransactionComponent, {
+    width: '800px',
+    disableClose: true,
+    data: { transaction: row.raw }
+  });
+
+  dialogRef.afterClosed().subscribe(async (updatedTransaction: TransactionModel | undefined) => {
+    if (updatedTransaction) {
+      try {
+
+        this.notify.showSuccess('Transaction updated successfully');
+
+        // Refresh the table
+        this.ngOnInit(); // rerun logic to reload table view
+
+      } catch (err) {
+        console.error('Failed to update transaction:', err);
+        this.notify.showError('Failed to update transaction. Please try again.');
+      }
+    }
+  });
+}
+
 
   delete(row: TransactionView) {
     // Confirm & call deleteTransaction if desired

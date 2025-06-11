@@ -1,0 +1,97 @@
+<form [formGroup]="transactionForm" (ngSubmit)="onSubmit()">
+  <h2 mat-dialog-title>Edit Transaction</h2>
+
+  <mat-dialog-content>
+    <div class="dialog-content-wrapper">
+      <div class="form-column">
+
+        <!-- 1) Function selection -->
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Transaction Operation</mat-label>
+          <mat-select formControlName="function" (selectionChange)="onFunctionChange()">
+            <mat-option value="single">Single Transaction</mat-option>
+            <mat-option value="bulk">Bulk Transaction</mat-option>
+            <mat-option value="payment-group">Payment Group</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- 2) Transaction Type -->
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Transaction Type</mat-label>
+          <mat-select formControlName="transactionTypeId">
+            <mat-option *ngFor="let t of transactionTypes" [value]="t.id">
+              {{ t.name }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- 3a) Bulk: multi-select workers -->
+        <mat-form-field
+          *ngIf="transactionForm.get('function')?.value === 'bulk'"
+          appearance="fill"
+          class="full-width"
+        >
+          <mat-label>Workers</mat-label>
+          <mat-select formControlName="workerIds" multiple>
+            <mat-option *ngFor="let w of workers" [value]="w.id">
+              {{ w.firstName }} {{ w.lastName }} ({{ w.employeeNumber }})
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- 3b) Single: single-select worker -->
+        <mat-form-field
+          *ngIf="transactionForm.get('function')?.value === 'single'"
+          appearance="fill"
+          class="full-width"
+        >
+          <mat-label>Worker</mat-label>
+          <mat-select formControlName="workerIds">
+            <mat-option *ngFor="let w of workers" [value]="w.id">
+              {{ w.firstName }} {{ w.lastName }} ({{ w.employeeNumber }})
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- 3c) Payment-Group: select a group -->
+        <mat-form-field
+          *ngIf="transactionForm.get('function')?.value === 'payment-group'"
+          appearance="fill"
+          class="full-width"
+        >
+          <mat-label>Payment Group</mat-label>
+          <mat-select formControlName="paymentGroupId">
+            <mat-option *ngFor="let g of paymentGroups" [value]="g.id">
+              {{ g.description }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- 4) Description -->
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Description</mat-label>
+          <input matInput formControlName="description" />
+        </mat-form-field>
+
+        <!-- 5) Amount -->
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Amount</mat-label>
+          <input matInput type="number" formControlName="amount" />
+        </mat-form-field>
+
+      </div>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions class="actions">
+    <button mat-button type="button" (click)="onCancel()">Cancel</button>
+    <button
+      mat-flat-button
+      color="primary"
+      type="submit"
+      [disabled]="transactionForm.invalid"
+    >
+      Save Changes
+    </button>
+  </mat-dialog-actions>
+</form>

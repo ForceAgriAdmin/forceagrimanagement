@@ -134,7 +134,7 @@ export class AddTransactionComponent implements OnInit {
 
     const baseTx: Omit<
       TransactionModel,
-      'workerIds' | 'workerTypesIds' | 'paymentGroupIds' | 'operationIds'
+      'id'| 'workerIds' | 'workerTypesIds' | 'paymentGroupIds' | 'operationIds'
     > = {
       timestamp: Timestamp.now(),
       amount: this.transactionForm.value.amount,
@@ -147,6 +147,7 @@ export class AddTransactionComponent implements OnInit {
 
     const tx: TransactionModel = {
       ...baseTx,
+      id: '',
       workerIds: [],
       workerTypesIds: [],
       paymentGroupIds: [],

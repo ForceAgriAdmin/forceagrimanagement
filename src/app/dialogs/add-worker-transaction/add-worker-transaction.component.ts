@@ -44,6 +44,7 @@ export class AddWorkerTransactionComponent {
   transactionForm: FormGroup;
   transactionTypes: TransactionTypeModel[] =[];
   transaction: TransactionModel = {
+    id: '',
     timestamp: Timestamp.now(),       
     amount: 0,                        
     description: '',
