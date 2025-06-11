@@ -52,8 +52,6 @@ import { HasRoleDirective } from '../../../directives/has-role.directive';
 })
 export class WorkerslistComponent implements OnInit{
   workers: WorkerModel[] = [];
-  notifications: NotificationMessage[] = [];
-  message!: NotificationMessage;
   filteredWorkers: WorkerModel[] = [];
   searchTerm: string = '';
   operationMap: { [id: string]: string } = {};
@@ -73,7 +71,7 @@ export class WorkerslistComponent implements OnInit{
       private dialog: MatDialog,
       private router: Router,
       private cardService: CardService,
-      private notficationService: NotificationService,
+      private notify: NotificationService,
       private authService: AuthService) {
         this.user$ = this.authService.authState$;
       }
@@ -133,12 +131,7 @@ export class WorkerslistComponent implements OnInit{
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
         this.workersService.addWorker(result).then(() => { 
-             this.message = {
-                  id: 'msg_success',
-                  severity: 'Success',
-                  message: 'Worker Added Successful',
-                };
-                this.notifications.push(this.message);
+             this.notify.showSuccess('Worker added successfully');
           });
       }
     });
@@ -157,13 +150,7 @@ export class WorkerslistComponent implements OnInit{
       if (result?.cardNumber) {
         this.cardService.scanWorkerCard(result.cardNumber,worker.id).then(response => {
           if(response){
-              this.message = {id: 'msg_info',severity:'Info',message:'Card Scan Successful'};
-              this.notifications.push(this.message);
-              setTimeout(() => {
-                console.log('Waited 3 seconds');
-                this.notifications.pop();
-              }, 3000);
-
+              this.notify.showSuccess('Card scan successful');
               this.openAddTransactionDialog(worker);
               
           }
@@ -172,22 +159,10 @@ export class WorkerslistComponent implements OnInit{
 
             this.cardService.scanSupervisorCard(result.cardNumber,this.loggedInUser.uid).then(supRessponse => {
               if(supRessponse){
-                this.message = {id: 'msg_info',severity:'Info',message:'Supervisor Card Scan Successful'};
-              this.notifications.push(this.message);
-              setTimeout(() => {
-                console.log('Waited 3 seconds');
-                this.notifications.pop();
-              }, 3000);
-                this.openAddTransactionDialog(worker);
+                this.notify.showSuccess('Supervisor Card Scan Successful');
               } 
               else{
-                //TODO: Create notification Alert
-                this.message = {id: 'msg_error',severity:'Error',message:'Invalid Card!!!'};
-                this.notifications.push(this.message);
-                setTimeout(() => {
-                  console.log('Waited 3 seconds');
-                  this.notifications.pop();
-                }, 3000);
+                this.notify.showError('Invalid Card!!!');
               }
             });
           }
@@ -229,18 +204,10 @@ export class WorkerslistComponent implements OnInit{
           if (!yes) return;
 
           this.workersService.deleteWorker(worker.id).then(() => {
-            this.notifications.push({
-              id: 'del_op',
-              severity: 'Success',
-              message: 'Worker deleted successfully'
-            });
-          }).catch(()=>{
-          this.notifications.push({
-              id: 'del_op',
-              severity: 'Error',
-              message: 'Unable to delete worker'
-            });
+            this.notify.showSuccess('Worker deleted successfully');
 
+          }).catch(()=>{
+            this.notify.showError('Unable to delete worker');
           });
 
         });

@@ -8,6 +8,7 @@ import { WorkersService } from '../../services/workerservice.service';
 import { MatDialog } from '@angular/material/dialog';
 import { AddWorkerComponent } from '../../dialogs/add-worker/add-worker.component';
 import { NotificationMessage } from '../../models/layout/notificationmessage';
+import { NotificationService } from '../../services/notification.service';
 @Component({
   selector: 'app-workers',
   imports: [ 
@@ -22,9 +23,6 @@ import { NotificationMessage } from '../../models/layout/notificationmessage';
 })
 export class WorkersComponent {
   childActive: boolean = false;
-notifications: NotificationMessage[] = [];
-  message!: NotificationMessage;
-
   
   cards: MenuItem[] = [
     { icon: 'list', label: 'List', route: '/workers/list',eventIdentifier:'',roles: ['SuperAdmin','Admin','Manager','User']},
@@ -33,7 +31,8 @@ notifications: NotificationMessage[] = [];
 
   constructor(
     private workersService: WorkersService,
-      private dialog: MatDialog
+      private dialog: MatDialog,
+      private notify: NotificationService
   ){}
   onActivate(child: any): void {
     this.childActive = true;
@@ -62,12 +61,7 @@ notifications: NotificationMessage[] = [];
       dialogRef.afterClosed().subscribe(result => {
         if (result) {
            this.workersService.addWorker(result).then(() => { 
-             this.message = {
-                  id: 'msg_success',
-                  severity: 'Success',
-                  message: 'Worker Added Successful',
-                };
-                this.notifications.push(this.message);
+             this.notify.showSuccess('Worker Added Successfully');
           });
         }
       });

@@ -49,6 +49,7 @@ import {
   updateDoc
 } from '@angular/fire/firestore';
 import { HasRoleDirective } from '../../../directives/has-role.directive';
+import { NotificationService } from '../../../services/notification.service';
 
 interface TransactionView {
   employeeNumber: string;
@@ -87,7 +88,7 @@ interface TransactionView {
   styleUrls: ['./transaction-list.component.scss']
 })
 export class TransactionListComponent implements OnInit {
-  notifications: NotificationMessage[] = [];
+
   displayedColumns = [
     'employeeNumber',
     'operationName',
@@ -110,7 +111,8 @@ export class TransactionListComponent implements OnInit {
     private ops: OperationService,
     private fs: FarmService,
     private dialog: MatDialog,
-    private afs: Firestore
+    private afs: Firestore,
+    private notify: NotificationService
   ) {}
 
   ngOnInit() {
@@ -213,11 +215,7 @@ export class TransactionListComponent implements OnInit {
     ref.afterClosed().subscribe(result => {
       if (result) {
         this.ts.createTransaction(result).then(() => {
-          this.notifications.push({
-            id: 'msg_success',
-            severity: 'Success',
-            message: 'Transaction added successfully'
-          });
+          this.notify.showSuccess('Transaction added successfully');
         });
       }
     });

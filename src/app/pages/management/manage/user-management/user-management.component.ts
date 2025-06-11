@@ -19,6 +19,7 @@ import { AppUser } from '../../../../models/users/user.model';
 import { DialogData, UserComponent } from '../../../../dialogs/user/user.component';
 import { ConfirmDeleteComponent } from '../../../../dialogs/confirm-delete/confirm-delete.component';
 import { HasRoleDirective } from '../../../../directives/has-role.directive';
+import { NotificationService } from '../../../../services/notification.service';
 @Component({
   selector: 'app-user-management',
   imports: [
@@ -43,7 +44,6 @@ import { HasRoleDirective } from '../../../../directives/has-role.directive';
   styleUrl: './user-management.component.scss'
 })
 export class UserManagementComponent {
-notifications: { id: string; severity: string; message: string }[] = [];
   displayedColumns = [
     'email',
     'displayName',
@@ -59,7 +59,8 @@ notifications: { id: string; severity: string; message: string }[] = [];
 
   constructor(
     private authService: AuthService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private notify: NotificationService
   ) {}
 
   ngOnInit() {
@@ -124,11 +125,7 @@ notifications: { id: string; severity: string; message: string }[] = [];
           },
           ...this.dataSource.data
         ];
-        this.notifications.push({
-          id: 'msg_add',
-          severity: 'Success',
-          message: 'User added successfully'
-        });
+        this.notify.showSuccess('User added successfully');
       }
     });
   }
@@ -155,11 +152,7 @@ notifications: { id: string; severity: string; message: string }[] = [];
             }
           : u
       );
-      this.notifications.push({
-        id: 'msg_edit',
-        severity: 'Success',
-        message: 'User updated'
-      });
+      this.notify.showSuccess('User updated successfully');
     });
   }
 
@@ -174,11 +167,7 @@ notifications: { id: string; severity: string; message: string }[] = [];
           this.dataSource.data = this.dataSource.data.filter(
             u => u.uid !== row.uid
           );
-          this.notifications.push({
-            id: 'msg_delete',
-            severity: 'Success',
-            message: 'User deleted successfully'
-          });
+          this.notify.showSuccess('User deleted successfully');
         });
       }
     });

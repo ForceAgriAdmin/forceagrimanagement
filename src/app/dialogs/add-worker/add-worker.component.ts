@@ -15,6 +15,7 @@ import { AuthService } from '../../services/auth.service';
 import { AppUser } from '../../models/users/user.model';
 import { Timestamp } from '@angular/fire/firestore';
 import { WorkerTypeModel } from '../../models/workers/worker-type';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-add-worker',
@@ -54,6 +55,7 @@ loggedInUser: AppUser = {
     private authService: AuthService,
     private dialog: MatDialog,
      private router: Router,
+     private notify: NotificationService,
     private dialogRef: MatDialogRef<AddWorkerComponent>
   ) {
     // Note: profileImageUrl is not in the form since that comes from file upload.

@@ -17,6 +17,7 @@ import {
   AddWorkerTransactionDialogData,
 } from '../../dialogs/add-worker-transaction/add-worker-transaction.component';
 import { WorkersService } from '../../services/workerservice.service';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-transactions',
@@ -32,8 +33,6 @@ import { WorkersService } from '../../services/workerservice.service';
 })
 export class TransactionsComponent {
   childActive: boolean = false;
-  notifications: NotificationMessage[] = [];
-  message!: NotificationMessage;
   worker!: WorkerModel;
   cards: MenuItem[] = [
     {
@@ -56,7 +55,8 @@ export class TransactionsComponent {
   constructor(
     private dialog: MatDialog,
     private cardService: CardService,
-    private workersService: WorkersService
+    private workersService: WorkersService,
+    private notify: NotificationService
   ) {}
   onActivate(child: any): void {
     this.childActive = true;
@@ -93,35 +93,16 @@ export class TransactionsComponent {
             this.workersService.getWorker(response).subscribe({
               next: (w) => {
                 this.worker = w;
-
-                // Now that worker is retrieved, do the following:
-                this.message = {
-                  id: 'msg_success',
-                  severity: 'Success',
-                  message: 'Card Scan Successful',
-                };
-                this.notifications.push(this.message);
-
-                setTimeout(() => {
-                  console.log('Waited 3 seconds');
-                  this.notifications.pop();
-                }, 3000);
-
-                this.openAddTransactionDialog(this.worker); // <== Moved here
+                this.notify.showSuccess('Card Scan Successful');
+                this.openAddTransactionDialog(this.worker);
               },
               error: (err) => {
                 console.error('Error loading worker:', err);
               },
             });
           }
-          else{
-             this.message = {
-                  id: 'msg_error',
-                  severity: 'Error',
-                  message: 'Ivalid Card!!!',
-                };
-                this.notifications.push(this.message);
-
+          else {
+            this.notify.showError('Invalid Card');
           }
         });
       }

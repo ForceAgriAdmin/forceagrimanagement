@@ -41,6 +41,7 @@ import { ReportsService } from '../../../../services/report.service';
 import { AddReportComponent } from '../../../../dialogs/add-report/add-report.component';
 import { RunReportComponent } from '../../../../dialogs/run-report/run-report.component';
 import { HasRoleDirective } from '../../../../directives/has-role.directive';
+import { NotificationService } from '../../../../services/notification.service';
 @Component({
   selector: 'app-report-management',
   standalone: true,
@@ -71,7 +72,8 @@ export class ReportManagementComponent implements OnInit {
 
   constructor(
     public svc: ReportsService,   // ← make public
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private notify: NotificationService
   ) {}
 
   ngOnInit() {
@@ -102,7 +104,7 @@ export class ReportManagementComponent implements OnInit {
     });
     ref.afterClosed().subscribe(changed => {
       if (!changed) return;
-      // real-time listener updates automatically
+      this.notify.showSuccess('Report Edited Successfully');
     });
   }
 

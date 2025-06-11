@@ -22,6 +22,7 @@ import { ConfirmDeleteComponent } from '../../../../dialogs/confirm-delete/confi
 import { NotificationMessage } from '../../../../models/layout/notificationmessage';
 import { OperationModel } from '../../../../models/operations/operation';
 import { OperationService } from '../../../../services/operation.service';
+import { NotificationService } from '../../../../services/notification.service';
 
 @Component({
   selector: 'app-operation-management',
@@ -43,7 +44,7 @@ import { OperationService } from '../../../../services/operation.service';
   styleUrls: ['./operation-management.component.scss']
 })
 export class OperationManagementComponent implements OnInit {
-  notifications: NotificationMessage[] = [];
+
   displayedColumns = ['name', 'description', 'createdAt', 'updatedAt', 'actions'];
   dataSource = new MatTableDataSource<OperationModel>([]);
   loading = true;
@@ -53,7 +54,8 @@ export class OperationManagementComponent implements OnInit {
 
   constructor(
     private ops:   OperationService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private notify: NotificationService
   ) {}
 
   ngOnInit() {
@@ -109,11 +111,7 @@ export class OperationManagementComponent implements OnInit {
       if (!created) return;
       // reload from server so timestamps have arrived
       this.loadOperations();
-      this.notifications.push({
-        id: 'add_op',
-        severity: 'Success',
-        message: 'Operation added'
-      });
+      this.notify.showSuccess('Operation added');
     });
   }
 
@@ -125,11 +123,7 @@ export class OperationManagementComponent implements OnInit {
     dlg.afterClosed().subscribe((updated: OperationModel | null) => {
       if (!updated) return;
       this.loadOperations();
-      this.notifications.push({
-        id: 'edit_op',
-        severity: 'Success',
-        message: 'Operation updated'
-      });
+      this.notify.showSuccess('Operation updated');
     });
   }
 
@@ -142,11 +136,7 @@ export class OperationManagementComponent implements OnInit {
       if (!yes) return;
       this.ops.deleteOperation(row.id).then(() => {
         this.loadOperations();
-        this.notifications.push({
-          id: 'del_op',
-          severity: 'Success',
-          message: 'Operation deleted'
-        });
+        this.notify.showSuccess('Operation deleted');
       });
     });
   }

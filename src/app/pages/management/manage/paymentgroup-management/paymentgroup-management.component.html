@@ -1,20 +1,5 @@
 <h2><span>Payment Groups</span></h2>
 
-<ng-template
-  ngFor
-  let-not
-  [ngForOf]="notifications"
-  let-i="index"
->
-  <ejs-message
-    id="{{ not.id }}"
-    severity="{{ not.severity }}"
-  >
-    {{ not.message }}
-  </ejs-message>
-  <br /><br />
-</ng-template>
-
 <div class="search-toolbar">
   <app-force-search
     label="Search"

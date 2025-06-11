@@ -8,11 +8,6 @@
     </nav>
   </div>
   <ng-container *ngIf="!childActive">
-    <ng-template ngFor let-item [ngForOf]="notifications" let-i="index" >
-    <ejs-message id={{item.id}} severity={{item.severity}}>{{item.message}}</ejs-message>
-    <br/>
-    <br/>
-  </ng-template>
     <div class="menu-card-list">
       <app-menucard [roles]="card.roles" *ngFor="let card of cards" [data]="card" (cardClicked)="handleCardClick($event)"></app-menucard>
     </div>

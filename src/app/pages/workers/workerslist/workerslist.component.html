@@ -4,15 +4,6 @@
   <span>Workers List</span>
 </h2>
 
-
-  <ng-template ngFor let-item [ngForOf]="notifications" let-i="index" >
-    <ejs-message id={{item.id}} severity={{item.severity}}>{{item.message}}</ejs-message>
-    <br/>
-    <br/>
-  </ng-template>
-
-
-
 <div *ngIf="workers.length < 0">
   <mat-spinner></mat-spinner>
 </div>
@@ -69,7 +60,7 @@
       <button *appHasRole="['SuperAdmin','Admin']" mat-button color="accent" (click)="onEdit(worker)">
         <mat-icon>edit</mat-icon>
       </button>
-      <button *appHasRole="['SuperAdmin','Admin']" mat-button class="action-button" (click)="onRemove(worker)">
+      <button *appHasRole="['SuperAdmin']" mat-button class="action-button" (click)="onRemove(worker)">
         <mat-icon>delete</mat-icon>
       </button>
     </mat-card-actions>

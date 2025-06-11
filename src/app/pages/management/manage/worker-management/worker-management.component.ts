@@ -14,6 +14,7 @@ import { ForceButtonComponent } from '../../../../components/general/forcebutton
 import { ConfirmDeleteComponent } from '../../../../dialogs/confirm-delete/confirm-delete.component';
 import { WorkersService } from '../../../../services/workerservice.service';
 import { AddWorkerTypeComponent, WorkerTypeDialogData } from '../../../../dialogs/add-worker-type/add-worker-type.component';
+import { NotificationService } from '../../../../services/notification.service';
 
 
 interface WorkerTypeView {
@@ -44,11 +45,7 @@ interface WorkerTypeView {
 })
 export class WorkerManagementComponent implements OnInit
 {
-  notifications: {
-    id: string;
-    severity: string;
-    message: string;
-  }[] = [];
+
 
   displayedColumns = [
     'description',
@@ -63,7 +60,8 @@ export class WorkerManagementComponent implements OnInit
 
   constructor(
     private ws: WorkersService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private notify: NotificationService
   ) {}
 
   ngOnInit() {
@@ -107,11 +105,7 @@ export class WorkerManagementComponent implements OnInit
     ref.afterClosed().subscribe(
       (res: WorkerTypeDialogData) => {
         if (!res) return;
-        this.notifications.push({
-          id: 'add',
-          severity: 'Success',
-          message: 'Worker type added'
-        });
+        this.notify.showSuccess('Worker type added');
       }
     );
   }
@@ -130,11 +124,7 @@ export class WorkerManagementComponent implements OnInit
     ref.afterClosed().subscribe(
       (res: WorkerTypeDialogData) => {
         if (!res) return;
-        this.notifications.push({
-          id: 'edit',
-          severity: 'Success',
-          message: 'Worker type updated'
-        });
+        this.notify.showSuccess('Worker type updated');
       }
     );
   }
@@ -152,11 +142,7 @@ export class WorkerManagementComponent implements OnInit
       this.ws
         .deleteWorkerType(row.id)
         .subscribe(() => {
-          this.notifications.push({
-            id: 'del',
-            severity: 'Success',
-            message: 'Worker type deleted'
-          });
+          this.notify.showSuccess('Worker type deleted');
         });
     });
   }

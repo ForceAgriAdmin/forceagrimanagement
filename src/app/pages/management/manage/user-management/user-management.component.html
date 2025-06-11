@@ -1,21 +1,5 @@
 <h2><span>User Management</span></h2>
 
-
-<ng-template
-  ngFor
-  let-item
-  [ngForOf]="notifications"
-  let-i="index"
->
-  <ejs-message
-    id="{{ item.id }}"
-    severity="{{ item.severity }}"
-  >
-    {{ item.message }}
-  </ejs-message>
-  <br /><br />
-</ng-template>
-
 <div class="search-toolbar">
   <app-force-search
     label="Search"

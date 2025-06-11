@@ -39,8 +39,7 @@ interface TransactionTypeView {
     MatProgressSpinnerModule,
     MessageModule,
     ForceSearchComponent,
-    ForceButtonComponent,
-    NotificationListComponent
+    ForceButtonComponent
   ],
   templateUrl: './transaction-management.component.html',
   styleUrl: './transaction-management.component.scss'

@@ -16,6 +16,7 @@ import { PaymentGroupService } from '../../../../services/payment-group.service'
 import { WorkersService } from '../../../../services/workerservice.service';
 import { AddPaymentGroupComponent, PaymentGroupDialogData } from '../../../../dialogs/add-payment-group/add-payment-group.component';
 import { ConfirmDeleteComponent } from '../../../../dialogs/confirm-delete/confirm-delete.component';
+import { NotificationService } from '../../../../services/notification.service';
 
 interface PaymentGroupView {
   id: string;
@@ -46,11 +47,7 @@ interface PaymentGroupView {
   styleUrl: './paymentgroup-management.component.scss'
 })
 export class PaymentgroupManagementComponent implements OnInit {
-  notifications: {
-    id: string;
-    severity: string;
-    message: string;
-  }[] = [];
+
 
   displayedColumns = [
     'description',
@@ -70,7 +67,8 @@ export class PaymentgroupManagementComponent implements OnInit {
   constructor(
     private pgService: PaymentGroupService,
     private ws: WorkersService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private notify: NotificationService
   ) {}
 
   ngOnInit() {
@@ -128,52 +126,13 @@ export class PaymentgroupManagementComponent implements OnInit {
     this.dataSource.filter = '';
   }
 
-  // onAdd() {
-  //   const ref = this.dialog.open(
-  //     AddPaymentGroupComponent,
-  //     {
-  //       width: '500px',
-  //       data: null
-  //     }
-  //   );
-  //   ref.afterClosed().subscribe((res) => {
-  //     if (!res) return;
-  //     // prepend new group
-  //     const names = res.workerIds
-  //       .map((id: string) => {
-  //         const w = this.allWorkers.find(x => x.id === id);
-  //         return w
-  //           ? `${w.firstName} ${w.lastName}`
-  //           : '?';
-  //       })
-  //       .join(', ');
-  //     this.dataSource.data = [
-  //       {
-  //         id: res.id,
-  //         description: res.description,
-  //         workerNames: names,
-  //         workerIds: res.workerIds,
-  //         createdAt: new Date()
-  //       },
-  //       ...this.dataSource.data
-  //     ];
-  //     this.notifications.push({
-  //       id: 'add_pg',
-  //       severity: 'Success',
-  //       message: 'Payment Group Created'
-  //     });
-  //   });
-  // }
 onAdd() {
   const ref = this.dialog.open(AddPaymentGroupComponent, { width: '500px', data: null });
   ref.afterClosed().subscribe(res => {
     if (!res) return;
     // don't manually update dataSource—firestore subscription will
-    this.notifications.push({
-      id: 'add_pg',
-      severity: 'Success',
-      message: 'Payment Group Created'
-    });
+    this.notify.showSuccess('Payment Group Created');
+    
   });
 }
   onEdit(row: PaymentGroupView) {
@@ -211,11 +170,7 @@ onAdd() {
               }
             : r
       );
-      this.notifications.push({
-        id: 'edit_pg',
-        severity: 'Success',
-        message: 'Payment Group Updated'
-      });
+      this.notify.showSuccess('Payment Group Updated');
     });
   }
 
@@ -238,11 +193,7 @@ onAdd() {
             this.dataSource.data.filter(
               r => r.id !== row.id
             );
-          this.notifications.push({
-            id: 'del_pg',
-            severity: 'Success',
-            message: 'Payment Group Deleted'
-          });
+            this.notify.showSuccess('Payment Group Deleted');
         });
     });
   }
