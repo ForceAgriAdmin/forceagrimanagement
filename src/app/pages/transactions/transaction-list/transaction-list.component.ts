@@ -48,6 +48,7 @@ import {
   getDocs,
   updateDoc
 } from '@angular/fire/firestore';
+import { HasRoleDirective } from '../../../directives/has-role.directive';
 
 interface TransactionView {
   employeeNumber: string;
@@ -79,7 +80,8 @@ interface TransactionView {
     MatProgressSpinnerModule,
     MessageModule,         // ← Ensure MessageModule is here
     ForceButtonComponent,
-    ForceSearchComponent
+    ForceSearchComponent,
+    HasRoleDirective
   ],
   templateUrl: './transaction-list.component.html',
   styleUrls: ['./transaction-list.component.scss']

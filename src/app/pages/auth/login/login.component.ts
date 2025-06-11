@@ -14,6 +14,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatCardModule } from '@angular/material/card';
 import { NotificationMessage } from '../../../models/layout/notificationmessage';
 import { MessageModule } from '@syncfusion/ej2-angular-notifications';
+import { MatProgressSpinner } from '@angular/material/progress-spinner';
 
 @Component({
   selector: 'app-login',
@@ -25,6 +26,7 @@ import { MessageModule } from '@syncfusion/ej2-angular-notifications';
     MatButtonModule,
     MatCardModule,
     MessageModule,
+    MatProgressSpinner
   ],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
@@ -32,7 +34,7 @@ import { MessageModule } from '@syncfusion/ej2-angular-notifications';
 export class LoginComponent {
   loginForm: FormGroup;
   resetPasswordForm: FormGroup;
-
+  isLoading: boolean = false;
   isForgotPasswordMode: boolean = false;
 
   notifications: NotificationMessage[] = [];
@@ -52,12 +54,14 @@ export class LoginComponent {
     });
   }
   onSubmit(): void {
+    this.isLoading = true;
     const { email, password } = this.loginForm.value;
     const { resetEmail } = this.resetPasswordForm.value;
 
     if (!this.isForgotPasswordMode) {
       this.authService.login(email, password).subscribe((result) => {
         if (result) {
+          this.isLoading = false;
           this.message = {
             id: 'msg_success',
             severity: 'Success',
@@ -66,6 +70,7 @@ export class LoginComponent {
           this.notifications.push(this.message);
           this.router.navigate(['/dashboard']);
         } else {
+           this.isLoading = false;
           this.message = {
             id: 'msg_error',
             severity: 'Error',

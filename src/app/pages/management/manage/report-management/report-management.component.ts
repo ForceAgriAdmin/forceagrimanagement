@@ -40,6 +40,7 @@ import { AppReport } from '../../../../models/reports/appreport';
 import { ReportsService } from '../../../../services/report.service';
 import { AddReportComponent } from '../../../../dialogs/add-report/add-report.component';
 import { RunReportComponent } from '../../../../dialogs/run-report/run-report.component';
+import { HasRoleDirective } from '../../../../directives/has-role.directive';
 @Component({
   selector: 'app-report-management',
   standalone: true,
@@ -54,7 +55,8 @@ import { RunReportComponent } from '../../../../dialogs/run-report/run-report.co
     MatTooltipModule,
     ForceSearchComponent,
     ForceButtonComponent,
-    MatIconModule
+    MatIconModule,
+    HasRoleDirective
   ],
   templateUrl: './report-management.component.html',
   styleUrls: ['./report-management.component.scss']

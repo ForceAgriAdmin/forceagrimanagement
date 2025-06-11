@@ -2,21 +2,17 @@
   <mat-card class="login-card">
     <mat-card-header>
       <mat-card-title>Login</mat-card-title>
-      
-      
+
+
     </mat-card-header>
     <mat-card-content>
       <ng-template ngFor let-item [ngForOf]="notifications" let-i="index">
         <ejs-message id="{{ item.id }}" [severity]="item.severity">{{
           item.message
-        }}</ejs-message>
+          }}</ejs-message>
         <br /><br />
       </ng-template>
-      <form
-        *ngIf="!isForgotPasswordMode"
-        [formGroup]="loginForm"
-        (ngSubmit)="onSubmit()"
-      >
+      <form *ngIf="!isForgotPasswordMode" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
         <mat-form-field appearance="fill" class="login-field">
           <mat-label>Email</mat-label>
           <input matInput formControlName="email" type="email" />
@@ -26,35 +22,28 @@
           <input matInput formControlName="password" type="password" />
         </mat-form-field>
         <div class="login-btn-container">
-          <button
-            *ngIf="!isForgotPasswordMode"
-            mat-raised-button
-            color="primary"
-            type="submit"
-            [disabled]="loginForm.invalid"
-          >
+          <button *ngIf="!isForgotPasswordMode" mat-raised-button color="primary" type="submit"
+            [disabled]="loginForm.invalid">
+            @if(isLoading)
+            {
+            <div class="spinner-left">
+              <mat-progress-spinner diameter="20" mode="indeterminate"></mat-progress-spinner>
+            </div>
+            }
+
             Login
           </button>
         </div>
       </form>
-      <form
-        *ngIf="isForgotPasswordMode"
-        [formGroup]="resetPasswordForm"
-        (ngSubmit)="onSubmit()"
-      >
+      <form *ngIf="isForgotPasswordMode" [formGroup]="resetPasswordForm" (ngSubmit)="onSubmit()">
         <mat-form-field appearance="fill" class="login-field">
           <mat-label>Email</mat-label>
           <input matInput formControlName="resetEmail" type="email" />
         </mat-form-field>
 
         <div class="login-btn-container">
-          <button
-            *ngIf="isForgotPasswordMode"
-            mat-raised-button
-            color="primary"
-            type="submit"
-            [disabled]="resetPasswordForm.invalid"
-          >
+          <button *ngIf="isForgotPasswordMode" mat-raised-button color="primary" type="submit"
+            [disabled]="resetPasswordForm.invalid">
             Send Reset Email
           </button>
         </div>
@@ -62,19 +51,11 @@
 
       <p *ngIf="!isForgotPasswordMode">
         Forgot password?
-        <a
-          style="color: blue; cursor: pointer"
-          (click)="isForgotPasswordMode = true"
-          >Click here</a
-        >
+        <a style="color: blue; cursor: pointer" (click)="isForgotPasswordMode = true">Click here</a>
         to reset
       </p>
       <p *ngIf="isForgotPasswordMode">
-        <a
-          style="color: blue; cursor: pointer"
-          (click)="isForgotPasswordMode = false"
-          >return to login</a
-        >
+        <a style="color: blue; cursor: pointer" (click)="isForgotPasswordMode = false">return to login</a>
       </p>
     </mat-card-content>
   </mat-card>

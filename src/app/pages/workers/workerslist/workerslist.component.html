@@ -66,10 +66,10 @@
       <button mat-button color="primary" (click)="onAddTransaction(worker)">
         <mat-icon>attach_money</mat-icon>
       </button>
-      <button mat-button color="accent" (click)="onEdit(worker)">
+      <button *appHasRole="['SuperAdmin','Admin']" mat-button color="accent" (click)="onEdit(worker)">
         <mat-icon>edit</mat-icon>
       </button>
-      <button mat-button class="action-button" (click)="onRemove(worker)">
+      <button *appHasRole="['SuperAdmin','Admin']" mat-button class="action-button" (click)="onRemove(worker)">
         <mat-icon>delete</mat-icon>
       </button>
     </mat-card-actions>

@@ -24,9 +24,11 @@ export class WorkersComponent {
   childActive: boolean = false;
 notifications: NotificationMessage[] = [];
   message!: NotificationMessage;
+
+  
   cards: MenuItem[] = [
-    { icon: 'list', label: 'List', route: '/workers/list',eventIdentifier:'',roles: [] },
-    { icon: 'person_add', label: 'New', route: '/' ,eventIdentifier:'addWorker',roles:[]}
+    { icon: 'list', label: 'List', route: '/workers/list',eventIdentifier:'',roles: ['SuperAdmin','Admin','Manager','User']},
+    { icon: 'person_add', label: 'New', route: '/' ,eventIdentifier:'addWorker',roles:['SuperAdmin','Admin','Manager','User']}
   ];
 
   constructor(

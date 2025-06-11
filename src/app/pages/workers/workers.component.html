@@ -1,3 +1,4 @@
+<div>
 <h1 *ngIf="!childActive" style="padding-left: 30px;">
   Workers
 </h1>
@@ -13,10 +14,12 @@
     <br/>
   </ng-template>
   <ng-container *ngIf="!childActive">
+  
     <div class="menu-card-list">
-      <app-menucard *ngFor="let card of cards" [data]="card" (cardClicked)="handleCardClick($event)"></app-menucard>
+      <app-menucard [roles]="card.roles" *ngFor="let card of cards" [data]="card" (cardClicked)="handleCardClick($event)"></app-menucard>
     </div>
   </ng-container>
   <router-outlet (activate)="onActivate($event)" (deactivate)="onDeactivate($event)"></router-outlet>
+  </div>
   
 

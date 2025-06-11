@@ -32,13 +32,15 @@
         <mat-card-title>{{ r.name }}</mat-card-title>
       </mat-card-content>
       <mat-card-actions>
-        <button
+        <button 
+        *appHasRole="['SuperAdmin','Admin']"
           mat-icon-button
           (click)="onAddEdit(r); $event.stopPropagation()"
         >
           <mat-icon>edit</mat-icon>
         </button>
         <button
+        *appHasRole="['SuperAdmin','Admin']"
           mat-icon-button
           (click)="svc.deleteReport(r.id).subscribe(); $event.stopPropagation()"
         >

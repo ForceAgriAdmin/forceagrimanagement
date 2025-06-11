@@ -28,6 +28,8 @@ import { AddWorkerTransactionComponent, AddWorkerTransactionDialogData } from '.
 import { AuthService } from '../../../services/auth.service';
 import { AppUser } from '../../../models/users/user.model';
 import { Timestamp } from '@angular/fire/firestore';
+import { ConfirmDeleteComponent } from '../../../dialogs/confirm-delete/confirm-delete.component';
+import { HasRoleDirective } from '../../../directives/has-role.directive';
 
 @Component({
   selector: 'app-workerslist',
@@ -42,7 +44,8 @@ import { Timestamp } from '@angular/fire/firestore';
     MatProgressSpinnerModule,
     ForceButtonComponent,
     ForceSearchComponent,
-    MessageModule
+    MessageModule,
+    HasRoleDirective
   ],
   templateUrl: './workerslist.component.html',
   styleUrl: './workerslist.component.scss'
@@ -216,8 +219,31 @@ export class WorkerslistComponent implements OnInit{
     });
   }
   onRemove(worker: WorkerModel) {
-    console.log('Remove worker', worker.firstName);
-    // ...
+    
+        const dlg = this.dialog.open(ConfirmDeleteComponent, {
+          width: '350px',
+          data: { name: `${worker.firstName} ${worker.lastName}` }
+        });
+        dlg.afterClosed().subscribe(yes => {
+
+          if (!yes) return;
+
+          this.workersService.deleteWorker(worker.id).then(() => {
+            this.notifications.push({
+              id: 'del_op',
+              severity: 'Success',
+              message: 'Worker deleted successfully'
+            });
+          }).catch(()=>{
+          this.notifications.push({
+              id: 'del_op',
+              severity: 'Error',
+              message: 'Unable to delete worker'
+            });
+
+          });
+
+        });
   }
 
   getOperationName(operationId: string): string {

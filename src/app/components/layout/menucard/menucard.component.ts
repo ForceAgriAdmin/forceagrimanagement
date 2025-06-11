@@ -19,6 +19,8 @@ export class MenucardComponent {
   @Input() roles!: string[];
    @Output() cardClicked = new EventEmitter<MenuItem>();
 
+   
+
   constructor(private router: Router) {}
 
   onCardClick() {

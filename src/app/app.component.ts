@@ -15,6 +15,10 @@ import { AppUser } from './models/users/user.model';
 import { Timestamp } from '@angular/fire/firestore';
  import { registerLicense } from '@syncfusion/ej2-base';
 import { HasRoleDirective } from './directives/has-role.directive';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { ConfirmDeleteComponent } from './dialogs/confirm-delete/confirm-delete.component';
+import { MatDialog } from '@angular/material/dialog';
+import { YesNoComponent } from './dialogs/yes-no/yes-no.component';
 @Component({
   selector: 'app-root',
   imports: [
@@ -28,7 +32,8 @@ import { HasRoleDirective } from './directives/has-role.directive';
     MatSidenavModule,
     MatIconModule,
     MatListModule,
-    HasRoleDirective
+    HasRoleDirective,
+    MatProgressSpinnerModule
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
@@ -43,6 +48,7 @@ export class AppComponent implements OnInit {
   ];
   user$: Observable<any>;
 
+isLoggedIn: boolean = false;
    loggedInUser: AppUser = {
         uid: '',
         email: '',
@@ -51,20 +57,41 @@ export class AppComponent implements OnInit {
         farmId: '',
         roles: []
       };
-  constructor(private authService: AuthService, private router: Router) {
+  constructor(private authService: AuthService, private router: Router,private dialog: MatDialog) {
     this.user$ = this.authService.authState$;
   }
   ngOnInit(): void {
+    this.isLoggedIn = false;
     this.authService.authState$.subscribe(user => {
 
       if (!user) {
+        this.isLoggedIn = false;
         this.router.navigate(['/login']);
       }
 
+      this.isLoggedIn = true;
       this.loggedInUser.email = user?.email || '';
       this.loggedInUser.uid = user?.uid || '';
 
     });
      registerLicense('Ngo9BigBOggjHTQxAR8/V1NNaF5cXmBCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXtcc3RWRWNYVUBxV0pWYUA=');
+  }
+
+  onLogout() {
+const dlg = this.dialog.open(
+      YesNoComponent,
+      {
+        width: '400px',
+        data: {
+          title: 'Logout',
+          message: 'Are you sure you want to logout.'
+        }
+      }
+    );
+    dlg.afterClosed().subscribe(yes => {
+      if (!yes) return;
+
+      this.authService.logout();
+    });
   }
 }

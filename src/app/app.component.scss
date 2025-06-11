@@ -6,6 +6,16 @@ mat-card{
   flex: 1 1 auto;
 }
 
+.spinner-container {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+  display: flex;
+     justify-content: center;
+     align-items: center;
+     height: 100vh;
+}
+
 .info-snackbar {
   background-color: #2196f3; /* Blue */
   color: white;

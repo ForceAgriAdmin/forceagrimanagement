@@ -4,24 +4,25 @@
       <button mat-icon-button (click)="sidenav.toggle()">
         <mat-icon style="color:  var(--mat-sys-background)">menu</mat-icon>
       </button>
-  
+
       <h1 style="color:  var(--mat-sys-background)"><span>{{ title }}</span></h1>
-  <span class="toolbar-spacer"></span>  
+      <span class="toolbar-spacer"></span>
       <h6 style="color:  var(--mat-sys-background)">Logged in as: {{loggedInUser.email}}</h6>
+      <button style="color:  var(--mat-sys-background)" mat-icon-button (click)="onLogout()">
+        <mat-icon>logout</mat-icon>
+      </button>
     </mat-toolbar-row>
-    
+
   </mat-toolbar>
   <mat-sidenav-container>
-    <mat-sidenav [style.width]="'200px'" #sidenav
-    mode="side"
-    opened>
+    <mat-sidenav [style.width]="'200px'" #sidenav mode="side" opened>
       <mat-nav-list>
         @for (item of menuItems; track $index) {
 
-            <a mat-list-item *appHasRole="item.roles" [routerLink]="item.route">
-              <mat-icon>{{ item.icon }}</mat-icon>
-              <span>{{ item.label }}</span>
-            </a>
+        <a mat-list-item *appHasRole="item.roles" [routerLink]="item.route">
+          <mat-icon>{{ item.icon }}</mat-icon>
+          <span>{{ item.label }}</span>
+        </a>
         }
       </mat-nav-list>
     </mat-sidenav>
@@ -29,7 +30,20 @@
       <router-outlet></router-outlet>
     </mat-sidenav-content>
   </mat-sidenav-container>
+
 </ng-container>
+
 <ng-template #loginOut>
+  @if(!isLoggedIn)
+  {
+  <div class="spinner-container">
+    <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
+  </div>
+
+  }
+  @else
+  {
   <router-outlet></router-outlet>
+  }
+
 </ng-template>
