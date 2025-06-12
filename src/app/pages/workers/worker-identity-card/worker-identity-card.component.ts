@@ -84,6 +84,8 @@ export class WorkerIdentityCardComponent implements OnInit {
     return this.operation?.name ?? '—';
   }
 
+ 
+
   getFarmName(): string {
     return this.farm?.name ?? '—';
   }

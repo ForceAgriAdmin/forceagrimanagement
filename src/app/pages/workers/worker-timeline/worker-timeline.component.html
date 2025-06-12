@@ -15,7 +15,7 @@
   </mat-card-header>
   <ejs-timeline>
     <e-items>
-        <e-item *ngFor="let item of mealTimes" [content]="item.content" [oppositeContent]="item.oppositeContent"> </e-item>
+        <e-item *ngFor="let event of events" [content]="event.title" [oppositeContent]="event.description"> </e-item>
     </e-items>
   </ejs-timeline>
 </mat-card>

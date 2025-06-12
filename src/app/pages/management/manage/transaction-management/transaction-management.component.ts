@@ -16,6 +16,7 @@ import { TransactionsService } from '../../../../services/transactions.service';
 import { AddTransactionTypeComponent, TransactionTypeDialogData } from '../../../../dialogs/add-transaction-type/add-transaction-type.component';
 import { NotificationListComponent } from '../../../../components/general/notification-message/notification-message.component';
 import { NotificationService } from '../../../../services/notification.service';
+import { HasRoleDirective } from '../../../../directives/has-role.directive';
 
 interface TransactionTypeView {
   id: string;
@@ -39,7 +40,8 @@ interface TransactionTypeView {
     MatProgressSpinnerModule,
     MessageModule,
     ForceSearchComponent,
-    ForceButtonComponent
+    ForceButtonComponent,
+    HasRoleDirective
   ],
   templateUrl: './transaction-management.component.html',
   styleUrl: './transaction-management.component.scss'
@@ -138,6 +140,10 @@ export class TransactionManagementComponent  implements OnInit
   }
 
   onDelete(row: TransactionTypeView) {
+    if(row.id='H0Q9PHwKPL35QhFBZTZ7') {
+      this.notify.showError('Unable to delete Transaction Type');
+      return;
+    }
     const ref = this.dialog.open(
       ConfirmDeleteComponent,
       {
@@ -148,7 +154,7 @@ export class TransactionManagementComponent  implements OnInit
     ref.afterClosed().subscribe(yes => {
       if (!yes) return;
       this.ts.deleteTransactionType(row.id).subscribe(() => {
-        this.notify.showError('Transaction type deleted');
+        this.notify.showSuccess('Transaction type deleted');
       });
     });
   }

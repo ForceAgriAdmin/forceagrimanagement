@@ -12,13 +12,16 @@ import {
   getDocs,
   query,
   where,
-  getDoc
+  getDoc,
+  Timestamp,
+  orderBy
 } from '@angular/fire/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from '@angular/fire/storage';
 import { catchError, forkJoin, from, map, Observable, of, tap, throwError } from 'rxjs';
 import { WorkerModel } from '../models/workers/worker';
 import { IdentityCard } from '../models/workers/identitycard';
 import { WorkerTypeModel } from '../models/workers/worker-type';
+import { TimelineEvent } from '../models/workers/timelineevent';
 
 // Simple in-memory cache for image URLs
 interface ImageCacheEntry {
@@ -90,8 +93,8 @@ export class WorkersService {
       const cardsCol = collection(this.firestore, 'cards');
       const q = query(
         cardsCol,
-        where('workerId', '==', workerId),
-        where('active', '==', true)
+        where('workerId', '==', workerId)
+        //where('active', '==', true)
       );
       return collectionData(q, { idField: 'id' }) as Observable<IdentityCard[]>;
     }).pipe(
@@ -157,12 +160,13 @@ export class WorkersService {
     return `${ts}${rnd}`;
   }
 
-  getWorkers(): Observable<WorkerModel[]> {
-    return runInInjectionContext(this.injector, () => {
-      const colRef = collection(this.firestore, 'workers');
-      return collectionData(colRef, { idField: 'id' }) as Observable<WorkerModel[]>;
-    });
-  }
+ getWorkers(): Observable<WorkerModel[]> {
+  return runInInjectionContext(this.injector, () => {
+    const colRef = collection(this.firestore, 'workers');
+    const q = query(colRef/*, where('isActive', '==', true)*/);
+    return collectionData(q, { idField: 'id' }) as Observable<WorkerModel[]>;
+  });
+}
 
  getWorkersById(ids: string[]): Observable<WorkerModel[]> {
     return runInInjectionContext(this.injector, () => {
@@ -245,6 +249,49 @@ export class WorkersService {
     });
   }
 
+  createWorkerTimelineEvent(event: Omit<TimelineEvent, 'id'>): Observable<TimelineEvent> {
+  return new Observable(observer => {
+    const col = collection(this.firestore, 'timelineEvents');
+    const ref = doc(col);
+    const firestoreEvent = {
+      workerId: event.workerId,
+      title: event.title,
+      actionDate: event.actionDate,
+      description: event.description,
+      icon: event.icon
+    };
+
+    setDoc(ref, firestoreEvent)
+      .then(() => {
+        observer.next({
+          id: ref.id,
+          workerId: event.workerId,
+          title: event.title,
+          actionDate: event.actionDate,
+          description: event.description,
+          icon: event.icon
+        });
+        observer.complete();
+      })
+      .catch(err => observer.error(err));
+  });
+}
+
+getTimelineEventsByWorkerId(
+    workerId: string
+  ): Observable<(TimelineEvent & { id: string })[]> {
+    const transactionsCol = collection(this.firestore, 'timelineEvents');
+    const q = query(
+      transactionsCol,
+      where('workerId', '==', workerId),
+      orderBy('actionDate', 'desc')
+    );
+    return runInInjectionContext(
+      this.injector,
+      () => collectionData(q, { idField: 'id' }) as Observable<(TimelineEvent & { id: string })[]>
+    );
+  }
+
   /** Update an existing worker type */
   updateWorkerType(id: string, description: string): Observable<void> {
     const ref = doc(this.firestore, `workerTypes/${id}`);
@@ -261,4 +308,8 @@ export class WorkersService {
     const ref = doc(this.firestore, `workerTypes/${id}`);
     return from(deleteDoc(ref));
   }
+
+
+
+  
 }

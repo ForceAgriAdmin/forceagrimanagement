@@ -34,4 +34,7 @@ export class WorkerDetailsCardComponent {
   @Input() form!: FormGroup;
   @Input() operations: LookupItem[] = [];
   @Input() farms: LookupItem[] = [];
+   getWorkerActiveStatus(worker: WorkerModel){
+    return worker.isActive ? 'Active': 'In-Active';
+  }
 }

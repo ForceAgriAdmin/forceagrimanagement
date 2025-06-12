@@ -14,4 +14,5 @@ export interface WorkerModel {
   updatedAt: Timestamp;
   workerTypeId: string;
   paymentGroupIds: string[]; 
+  isActive: boolean;
 }

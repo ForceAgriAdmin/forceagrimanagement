@@ -83,12 +83,14 @@
         </th>
         <td mat-cell *matCellDef="let r">
           <button
+            *appHasRole="['SuperAdmin','Admin']"
             mat-icon-button
             (click)="onEdit(r)"
           >
             <mat-icon>edit</mat-icon>
           </button>
           <button
+            *appHasRole="['SuperAdmin','Admin']"
             mat-icon-button
             (click)="onDelete(r)"
           >

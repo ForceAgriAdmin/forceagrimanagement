@@ -37,5 +37,28 @@
       color: #f44336; // red
     }
   }
+.identity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
+.status-badge {
+  font-weight: bold;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+}
+
+/* Conditional styles based on class */
+.status-badge.Active {
+  background-color: #dff0d8;
+  color: #2e7d32;
+}
+
+.status-badge.In-Active {
+  background-color: #f8d7da;
+  color: #c62828;
+}
   

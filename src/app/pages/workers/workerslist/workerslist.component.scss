@@ -18,7 +18,7 @@
   
   .worker-card {
     width: 300px;
-  
+    position: relative;
     .avatar {
       width: 64px;
       height: 64px;
@@ -47,4 +47,52 @@
   }
 
   
-  
+  .worker-info-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.worker-info-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-left: 30px;
+  margin-top: 5px;
+
+}
+
+.status-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  border-radius: 12px;
+  color: white;
+  z-index: 10;
+  margin-top: -8px;
+  margin-right: -10px;
+}
+
+
+.active-badge {
+   background-color: #dff0d8;
+  color: #2e7d32;
+}
+
+.inactive-badge {
+  background-color: #f8d7da;
+  color: #c62828;
+}
+
+mat-card-title {
+  font-size: 1.0rem;
+  font-weight: 600;
+}
+
+mat-card-subtitle {
+  font-size: 0.9rem;
+  margin-left: 30px;
+}

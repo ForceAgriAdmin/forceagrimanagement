@@ -14,24 +14,84 @@ export const onTransactionCreated = onDocumentCreated(
       logger.error("No snapshot available");
       return;
     }
+
     const txData = snap.data();
     if (!txData) {
       logger.error("Transaction data undefined");
       return;
     }
+
     const {
       transactionTypeId,
       function: transactionFunction,
       workerIds: originalWorkerIds,
       paymentGroupIds,
-      amount: rawAmount
+      amount: rawAmount,
+      iisSettleTransaction
     } = txData as {
       transactionTypeId: string;
       function: string;
       workerIds: string[];
       paymentGroupIds: string[];
       amount: number;
+      iisSettleTransaction?: boolean;
     };
+
+    // Special case: Settle transaction
+    if (iisSettleTransaction) {
+      const workerIdSet = new Set<string>();
+
+      if (transactionFunction === "single" && originalWorkerIds?.length > 0) {
+        workerIdSet.add(originalWorkerIds[0]);
+      } else if (transactionFunction === "bulk") {
+        originalWorkerIds?.forEach((id) => workerIdSet.add(id));
+      } else if (transactionFunction === "payment-group") {
+        for (const pgId of paymentGroupIds || []) {
+          const pgSnap = await db.doc(`paymentGroups/${pgId}`).get();
+          if (pgSnap.exists) {
+            const pgData = pgSnap.data() as { workerIds: string[] };
+            pgData?.workerIds?.forEach((id) => workerIdSet.add(id));
+          }
+        }
+      }
+
+      const settleAmounts: Record<string, number> = {};
+
+      for (const wid of workerIdSet) {
+        const workerRef = db.doc(`workers/${wid}`);
+        const workerSnap = await workerRef.get();
+        if (!workerSnap.exists) continue;
+
+        const workerData = workerSnap.data() as { currentBalance: number };
+        const balance = workerData?.currentBalance ?? 0;
+
+        // Store individual settle amount for auditing
+        settleAmounts[wid] = balance;
+
+        // Create transaction amount as negative value (expense)
+        await db.collection("workerTransactions").add({
+          workerId: wid,
+          transactionId: event.params.txId,
+          amount: -Math.abs(balance),
+          type: "settle",
+          createdAt: FieldValue.serverTimestamp()
+        });
+
+        // Set balance to 0
+        await workerRef.update({ currentBalance: 0 });
+
+        logger.log(`Settled worker ${wid} → balance was ${balance}, now 0`);
+      }
+
+      // Update the transaction document with audit values
+      await snap.ref.update({
+        settledAmounts: settleAmounts,
+        wasSettled: true
+      });
+
+      logger.log(`Transaction ${event.params.txId} marked as settle transaction.`);
+      return; // Skip normal transaction processing
+    }
 
     // 1) Load TransactionType to check isCredit
     const typeRef = db.doc(`transactionTypes/${transactionTypeId}`);

@@ -23,16 +23,5 @@ import { TimelineEvent } from '../../../models/workers/timelineevent';
 })
 export class WorkerTimelineComponent {
   @Input() events: TimelineEvent[] = [];
-  @Input() eventsx: TimelineItemModel[] = [
-    { content: 'Shipped' },
-    { content: 'Departed' },
-    { content: 'Arrived' },
-    { content: 'Out for Delivery' }
-  ];
-
-    public mealTimes: TimelineItemModel[] = [
-      { content: 'Breakfast', oppositeContent: '2025/05/01 8:00 AM' },
-      { content: 'Lunch', oppositeContent: '1:00 PM' },
-      { content: 'Dinner', oppositeContent: '8:00 PM' },
-  ];
+  
 }

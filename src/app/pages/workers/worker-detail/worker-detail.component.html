@@ -9,7 +9,7 @@
                   (action)="onAction($event)"
                   [buttons]="[
                     { id: 'save',   label: 'Save',   icon: 'save'   },
-                    { id: 'settle', label: 'Settle', icon: 'save' },
+                    { id: 'action', label: 'Action', icon: 'manage_accounts' },
                     { id: 'printCard',  label: 'Print Card', icon: 'print'  }
                   ]"
                 ></app-action-toolbar>
@@ -43,42 +43,3 @@
     </mat-grid-list>
   
 </ng-container>
-<!-- <div class="worker-detail-grid">
-    <div class="toolbar">
-      <app-action-toolbar
-        (action)="onAction($event)"
-        [buttons]="[
-            { id: 'save', label: 'Save', icon: 'save' },
-            { id: 'settle', label: 'Settle', icon: 'save' }
-        ]"
-      ></app-action-toolbar>
-    </div>
-
-    <div class="details">
-      <app-worker-details-card
-        [worker]="worker"
-        [form]="form"
-        [operations]="operations"
-        [farms]="farms"
-      ></app-worker-details-card>
-    </div>
-
-
-    <div class="identity">
-      <app-worker-identity-card
-        [worker]="worker"
-      ></app-worker-identity-card>
-    </div>
-
-    <div class="transactions">
-      <app-transaction-list
-        [workerId]="worker.id"
-      ></app-transaction-list>
-    </div>
-
-    <div class="timeline">
-      <app-worker-timeline
-        [events]="events"
-      ></app-worker-timeline>
-    </div>
-  </div> -->
