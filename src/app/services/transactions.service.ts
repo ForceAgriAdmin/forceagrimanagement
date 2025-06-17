@@ -281,97 +281,97 @@ getTransactionTypeById(
     >;
   }
   async PrintTransactionSlip(tx: TransactionModel & { id: string }): Promise<void> {
-    // 1) Fetch worker’s full details
+
     const worker = await firstValueFrom(
       this.workerService.getWorker(tx.workerIds[0])
     ) as WorkerModel;
 
-    // 2) Fetch transaction‐type record (to get its name and isCredit flag)
     const typeRec = await firstValueFrom(
       this.getTransactionTypeById(tx.transactionTypeId)
     ) as TransactionTypeModel;
-
-    // 3) Compute “before” and “after” balances
-    //    We assume `worker.currentBalance` has already been incremented in Cloud Function.
-    //    So “afterBalance” = worker.currentBalance;
-    //    and “beforeBalance” = after − delta (delta = signed amount).
+    
     let afterBalance = worker.currentBalance;
     let delta = tx.amount;
     if (typeRec.isCredit) {
-      // For credit‐type, Firestore function would have stored amount as –abs(amount).
-      // In that case, delta is already negative.  So beforeBalance = afterBalance − delta.
-      //  e.g. before $100, credit of 20 ⇒ ts flipped to −20, applied ⇒ new balance = 80.
-      //  delta = −20, afterBalance = 80, so beforeBalance = 80 − (−20) = 100.
       delta = tx.amount;
     }
     const beforeBalance = afterBalance - delta;
 
-    // 4) Build the HTML of the slip (280px‐wide)
     const receiptHtml = `
       <!DOCTYPE html>
       <html lang="en">
       <head>
         <meta charset="UTF-8" />
         <title>Slip Receipt</title>
-        <style>
-          body {
-            margin: 0;
-            padding: 0;
-            font-family: "Courier New", Courier, monospace;
-          }
-          .receipt {
-            width: 280px;
-            padding: 8px;
-          }
-          .receipt-header {
-            text-align: center;
-            margin-bottom: 8px;
-          }
-          .receipt-header h2 {
-            margin: 0;
-            font-size: 18px;
-            letter-spacing: 1px;
-          }
-          .receipt-header p {
-            margin: 2px 0;
-            font-size: 12px;
-            color: #555;
-          }
-          .divider {
-            border-top: 1px dashed #999;
-            margin: 6px 0;
-          }
-          .field-row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 14px;
-            margin: 2px 0;
-          }
-          .field-row .label {
-            flex: 1;
-            text-align: left;
-          }
-          .field-row .value {
-            flex: 1;
-            text-align: right;
-          }
-          .receipt-footer {
-            text-align: center;
-            margin-top: 8px;
-            font-size: 12px;
-            color: #777;
-          }
-          @media print {
-            body {
-              background: white;
-            }
-            .receipt {
-              box-shadow: none;
-              margin: 0;
-              padding: 0;
-            }
-          }
-        </style>
+       <style>
+  @page {
+  size: 80mm auto;
+  margin: 0;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Courier New", Courier, monospace;
+}
+
+.receipt {
+  width: 72mm;            /* slightly less than 80mm */
+  padding: 4mm 5mm;       /* space on left & right */
+  box-sizing: border-box;
+}
+
+.receipt-header {
+  text-align: center;
+  margin-bottom: 4mm;
+}
+
+.receipt-header h2 {
+  margin: 0;
+  font-size: 16pt;
+}
+
+.receipt-header p {
+  margin: 1mm 0;
+  font-size: 10pt;
+  color: #555;
+}
+
+.divider {
+  border-top: 1px dashed #999;
+  margin: 4mm 0;
+}
+
+.field-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9pt;
+  margin-bottom: 1.5mm;
+}
+
+.receipt-footer {
+  text-align: center;
+  margin-top: 4mm;
+  font-size: 9pt;
+  color: #777;
+}
+
+@media print {
+  html, body {
+    width: 80mm;
+    margin: 0;
+    padding: 0;
+  }
+
+  .receipt {
+    width: 72mm;          /* maintain smaller width */
+    padding: 4mm 5mm;
+    box-shadow: none;
+  }
+}
+
+</style>
+
       </head>
       <body>
         <div class="receipt">
@@ -431,7 +431,6 @@ getTransactionTypeById(
       </html>
     `;
 
-    // 5) Open a new window, write the HTML, and trigger print
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       console.error('Popup blocked – cannot print slip');
@@ -439,14 +438,13 @@ getTransactionTypeById(
     }
     printWindow.document.open();
     printWindow.document.write(receiptHtml);
+    
     printWindow.document.close();
 
-    // Give browser a fraction of a second to render, then print
-    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
     setTimeout(() => {
-      printWindow.print();
-      // Optionally close window after printing
-      // printWindow.close();
+      
     }, 300);
   }
 }

@@ -20,6 +20,7 @@ import { AppUser } from '../../models/users/user.model';
 import { Router, RouterModule } from '@angular/router';
 import { TransactionModel } from '../../models/transactions/transaction';
 import { Timestamp } from '@angular/fire/firestore';
+import { NotificationService } from '../../services/notification.service';
 export interface AddWorkerTransactionDialogData {
   worker?: WorkerModel | null;
 }
@@ -73,7 +74,8 @@ export class AddWorkerTransactionComponent {
     private fb: FormBuilder,
     private transactionService: TransactionsService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private notify: NotificationService
   ) {
     this.transactionForm = this.fb.group({
       description: ['', Validators.required],
@@ -117,13 +119,18 @@ export class AddWorkerTransactionComponent {
       this.transaction.operationIds.push(this.worker.operationId)
       this.transaction.workerIds.push(this.worker.id)
 
-      this.transactionService.createTransaction(this.transaction).then(url => {
-        //TODO: Create notification alert
+      this.transactionService.createTransaction(this.transaction).then(async url => {
+        
+        const tranTypeName = this.transactionTypes.find(x => x.id === this.transaction.transactionTypeId)?.name;
+
+        this.transaction.id = url;
+         if (tranTypeName && tranTypeName.toLowerCase() === 'shop') {
+          await this.transactionService.PrintTransactionSlip(this.transaction);
+        }
         this.dialogRef.close();
       })
       .catch(error => {
-        console.error('Create Transaction failed', error);
-        // Optionally notify the user of the failure.
+        this.notify.showError(`Failed to create transaction: ${error}`)
       });
       }
       
