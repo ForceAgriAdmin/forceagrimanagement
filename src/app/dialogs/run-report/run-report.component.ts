@@ -464,41 +464,40 @@ export class RunReportComponent implements OnInit {
 
     // 10) If summary === true, group by __workerId and sum the “amount”
     if (this.report.summary) {
-      const summaryMap = new Map<string, any>();
+  const summaryMap = new Map<string, any>();
 
-      detailedRows.forEach((row) => {
-        const wid = (row as any).__workerId as string | null;
-        const groupingKey = wid || '__no_worker__';
+  detailedRows.forEach((row) => {
+    const txType = row['transactionTypeId'] || 'Unknown';
 
-        if (!summaryMap.has(groupingKey)) {
-          // First time seeing this worker: clone & parse amount
-          const cloned = { ...row };
-          const rawAmt = cloned.amount;
-          const parsed = typeof rawAmt === 'number'
-            ? rawAmt
-            : parseFloat(rawAmt) || 0;
-          cloned.amount = parsed;
-          summaryMap.set(groupingKey, cloned);
-        } else {
-          // Add this row’s amount onto the existing sum
-          const existing = summaryMap.get(groupingKey);
-          const rawAmt = row.amount;
-          const parsed = typeof rawAmt === 'number'
-            ? rawAmt
-            : parseFloat(rawAmt) || 0;
-          existing.amount += parsed;
+    if (!summaryMap.has(txType)) {
+      const cloned = { ...row };
+      const rawAmt = cloned.amount;
+      const parsed = typeof rawAmt === 'number' ? rawAmt : parseFloat(rawAmt) || 0;
+      cloned.amount = parsed;
+
+      // Keep only relevant fields
+      for (const key in cloned) {
+        if (!['amount', 'transactionTypeId'].includes(key)) {
+          delete cloned[key];
         }
-      });
+      }
 
-      // Convert Map → array, delete helpers, return
-      const summarized: any[] = [];
-      summaryMap.forEach((val) => {
-        delete val.__workerId;
-        delete val._operationId;
-        summarized.push(val);
-      });
-      return summarized;
+      summaryMap.set(txType, cloned);
+    } else {
+      const existing = summaryMap.get(txType);
+      const rawAmt = row.amount;
+      const parsed = typeof rawAmt === 'number' ? rawAmt : parseFloat(rawAmt) || 0;
+      existing.amount += parsed;
     }
+  });
+
+  // Convert Map → array and return
+  const summarized: any[] = [];
+  summaryMap.forEach((val) => {
+    summarized.push(val);
+  });
+  return summarized;
+}
 
     // 11) If summary === false, strip helpers and return all rows
     const cleaned = detailedRows.map(r => {
@@ -519,46 +518,45 @@ export class RunReportComponent implements OnInit {
 
   /** Export as PDF (determines logoUrl dynamically) */
   async exportPDF() {
-    // 1) Get detailed rows WITH helpers (_operationId)
-    const detailedWithIds: any[] = await this.getDetailedRowsWithIds();
+  const rowsWithIds: any[] = this.report.summary
+    ? await this.fetchFilteredRows()
+    : await this.getDetailedRowsWithIds();
 
-    // 2) Strip out __workerId and _operationId for the final “rows” array
-    const rows = detailedWithIds.map(r => {
-      const copy = { ...r };
-      delete copy.__workerId;
-      delete copy._operationId;
-      return copy;
-    });
+  const rows = this.report.summary
+    ? rowsWithIds
+    : rowsWithIds.map(r => {
+        const copy = { ...r };
+        delete copy.__workerId;
+        delete copy._operationId;
+        return copy;
+      });
 
-    // 3) Determine logoUrl from the first row’s _operationId
-    let logoUrl = '/assets/anebfarming.jpg'; // fallback static logo
-    if (detailedWithIds.length > 0) {
-      const firstOpId = detailedWithIds[0]._operationId as string | null;
-      if (firstOpId) {
-        const op = this.operations.find(o => o.id === firstOpId);
-        if (op && op.profileImageUrl) {
-          logoUrl = op.profileImageUrl;
-        }
+  let logoUrl = '/assets/anebfarming.jpg';
+  if (!this.report.summary && rowsWithIds.length > 0) {
+    const firstOpId = rowsWithIds[0]._operationId as string | null;
+    if (firstOpId) {
+      const op = this.operations.find(o => o.id === firstOpId);
+      if (op?.profileImageUrl) {
+        logoUrl = op.profileImageUrl;
       }
     }
-
-    // 4) Build columns & metadata
-    const cols = this.report.fields.map((f) => ({ label: f.label, key: f.key }));
-    const from = this.form.value.from;
-    const to   = this.form.value.to;
-    const name = this.report.name.replace(/\s+/g, '_');
-
-    // 5) Call generatePdf() with dynamic logoUrl
-    await this.printSvc.generatePdf({
-      reportName: this.report.name,
-      from,
-      to,
-      logoUrl,
-      columns: cols,
-      rows,
-      fileName: `Report_${name}_${formatDate(from)}-${formatDate(to)}`
-    });
   }
+
+  const cols = this.report.fields.map(f => ({ label: f.label, key: f.key }));
+  const from = this.form.value.from;
+  const to = this.form.value.to;
+  const name = this.report.name.replace(/\s+/g, '_');
+
+  await this.printSvc.generatePdf({
+    reportName: this.report.name,
+    from,
+    to,
+    logoUrl,
+    columns: cols,
+    rows,
+    fileName: `Report_${name}_${formatDate(from)}-${formatDate(to)}`
+  });
+}
 
   /** Export as Excel (unchanged) */
   async exportExcel() {
