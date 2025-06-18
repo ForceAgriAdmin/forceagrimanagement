@@ -1,17 +1,74 @@
-mat-card{
-    height: 100%;
-    width: 100%;
-    margin: 0;               /* remove any default mat-card margins */
-    box-sizing: border-box;  /* keep padding/border inside */
-    
-    /* optional—if you want your header/content/actions to stack and stretch: */
-    display: flex;
-    flex-direction: column;
-    background-color: var(--mat-sys-background) !important;
-  }
+/* ───────────────────────────────────────────────────────
+   Your existing rules (do not change)
+──────────────────────────────────────────────────────── */
 
-  :host {
-    display: flex;   /* or flex, either works */
-    height: 100%;
-    width: 100%;
-  }
+mat-card {
+  height: 100%;
+  width: 100%;
+  margin: 0;               /* remove any default mat-card margins */
+  box-sizing: border-box;  /* keep padding/border inside */
+  
+  /* optional—if you want your header/content/actions to stack and stretch: */
+  display: flex;
+  flex-direction: column;
+  background-color: var(--mat-sys-background) !important;
+}
+
+:host {
+  display: flex;   /* or flex, either works */
+  height: 100%;
+  width: 100%;
+}
+
+/* ───────────────────────────────────────────────────────
+   New timeline‐specific styling
+──────────────────────────────────────────────────────── */
+
+/* wrap your title+description so we can style them */
+.content-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.content-container .title {
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.content-container .description {
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+/* right‐align the actionDate in the oppositeContent cell */
+:host ::ng-deep .e-opposite-content {
+  text-align: right;
+  font-size: 0.85rem;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+/* target the dot container via our custom classes */
+:host ::ng-deep .created-dot {
+  background-color: #e8f5e9 !important;  /* pale green */
+  border-color:     #66bb6a !important;  /* medium green */
+  color:            #2e7d32 !important;  /* dark green icon */
+}
+
+:host ::ng-deep .settle-dot {
+  background-color: #ffebee !important;  /* pale red/pink */
+  border-color:     #e53935 !important;  /* medium red */
+  color:            #c62828 !important;  /* dark red icon */
+}
+
+:host ::ng-deep .change-dot {
+  background-color: #e3f2fd !important;  /* pale blue */
+  border-color:     #1e88e5 !important;  /* medium blue */
+  color:            #1565c0 !important;  /* dark blue icon */
+}
+
+:host ::ng-deep .e-vertical .e-dot {
+  position: relative !important;
+  top: 50%    !important;
+  transform: translateY(50%) !important;
+}

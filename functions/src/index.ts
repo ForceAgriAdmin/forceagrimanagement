@@ -24,187 +24,171 @@ export const onTransactionCreated = onDocumentCreated(
     const {
       transactionTypeId,
       function: transactionFunction,
-      workerIds: originalWorkerIds,
-      paymentGroupIds,
+      workerIds: originalWorkerIds = [],
+      paymentGroupIds = [],
       amount: rawAmount,
       iisSettleTransaction
     } = txData as {
       transactionTypeId: string;
       function: string;
-      workerIds: string[];
-      paymentGroupIds: string[];
+      workerIds?: string[];
+      paymentGroupIds?: string[];
       amount: number;
       iisSettleTransaction?: boolean;
     };
 
+    // ───────────────────────────────────────────
     // Special case: Settle transaction
+    // ───────────────────────────────────────────
     if (iisSettleTransaction) {
+      // 1) Build a unique set of worker IDs
       const workerIdSet = new Set<string>();
-
-      if (transactionFunction === "single" && originalWorkerIds?.length > 0) {
+      if (transactionFunction === "single" && originalWorkerIds.length) {
         workerIdSet.add(originalWorkerIds[0]);
       } else if (transactionFunction === "bulk") {
-        originalWorkerIds?.forEach((id) => workerIdSet.add(id));
+        originalWorkerIds.forEach(id => workerIdSet.add(id));
       } else if (transactionFunction === "payment-group") {
-        for (const pgId of paymentGroupIds || []) {
-          const pgSnap = await db.doc(`paymentGroups/${pgId}`).get();
+        for (const pgId of paymentGroupIds) {
+          const pgSnap = await db.collection("paymentGroups").doc(pgId).get();
           if (pgSnap.exists) {
-            const pgData = pgSnap.data() as { workerIds: string[] };
-            pgData?.workerIds?.forEach((id) => workerIdSet.add(id));
+            const pgData = pgSnap.data() as { workerIds?: string[] };
+            (pgData.workerIds || []).forEach(wid => workerIdSet.add(wid));
           }
         }
       }
 
-      const settleAmounts: Record<string, number> = {};
+      const settledAmounts: Record<string, number> = {};
 
-      for (const wid of workerIdSet) {
-        const workerRef = db.doc(`workers/${wid}`);
-        const workerSnap = await workerRef.get();
-        if (!workerSnap.exists) continue;
+      // 2) For each worker, run a Firestore transaction:
+      //    • read currentBalance
+      //    • write a negative settle entry to workerTransactions
+      //    • zero out the worker’s currentBalance
+      await Promise.all(
+        Array.from(workerIdSet).map(async (wid) => {
+          const workerRef = db.collection("workers").doc(wid);
 
-        const workerData = workerSnap.data() as { currentBalance: number };
-        const balance = workerData?.currentBalance ?? 0;
+          await db.runTransaction(async (t) => {
+            const wsnap = await t.get(workerRef);
+            if (!wsnap.exists) {
+              logger.warn(`Worker ${wid} not found`);
+              return;
+            }
+            const balance = (wsnap.get("currentBalance") as number) || 0;
+            settledAmounts[wid] = balance;
 
-        // Store individual settle amount for auditing
-        settleAmounts[wid] = balance;
+            // a) record the settle transaction
+            const wtxRef = db.collection("workerTransactions").doc();
+            t.set(wtxRef, {
+              workerId: wid,
+              transactionId: event.params.txId,
+              amount: -Math.abs(balance),
+              type: "settle",
+              createdAt: FieldValue.serverTimestamp()
+            });
 
-        // Create transaction amount as negative value (expense)
-        await db.collection("workerTransactions").add({
-          workerId: wid,
-          transactionId: event.params.txId,
-          amount: -Math.abs(balance),
-          type: "settle",
-          createdAt: FieldValue.serverTimestamp()
-        });
+            // b) zero out the balance
+            t.update(workerRef, { currentBalance: 0 });
+          });
 
-        // Set balance to 0
-        await workerRef.update({ currentBalance: 0 });
+          logger.log(`Settled worker ${wid}: was ${settledAmounts[wid]}, now 0`);
+        })
+      );
 
-        logger.log(`Settled worker ${wid} → balance was ${balance}, now 0`);
-      }
-
-      // Update the transaction document with audit values
+      // 3) Annotate the original transaction document
       await snap.ref.update({
-        settledAmounts: settleAmounts,
+        settledAmounts,
         wasSettled: true
       });
 
-      logger.log(`Transaction ${event.params.txId} marked as settle transaction.`);
-      return; // Skip normal transaction processing
+      logger.log(
+        `Transaction ${event.params.txId} completed settle for workers: ${Object.keys(
+          settledAmounts
+        ).join(", ")}`
+      );
+      return; // skip the normal flow
     }
 
+    // ───────────────────────────────────────────
+    // Normal transaction processing
+    // ───────────────────────────────────────────
+
     // 1) Load TransactionType to check isCredit
-    const typeRef = db.doc(`transactionTypes/${transactionTypeId}`);
+    const typeRef = db.collection("transactionTypes").doc(transactionTypeId);
     const typeSnap = await typeRef.get();
     if (!typeSnap.exists) {
       logger.error(`TransactionType ${transactionTypeId} not found`);
       return;
     }
-    const typeData = typeSnap.data();
-    if (!typeData) {
-      logger.error(`TransactionType data undefined for ${transactionTypeId}`);
-      return;
-    }
-    const isCredit = (typeData as { isCredit: boolean }).isCredit;
+    const typeData = typeSnap.data() as { isCredit: boolean };
+    const isCredit = typeData.isCredit;
 
     // 2) Determine signed delta
     let delta = rawAmount;
     if (isCredit) {
       delta = -Math.abs(delta);
       await snap.ref.update({ amount: delta });
-      logger.log(`Flipped credit → ${delta}`);
+      logger.log(`Flipped credit on TX ${event.params.txId} → ${delta}`);
     }
 
-    // Helper to update a single worker’s balance
+    // Helper to update one worker’s balance
     async function updateWorkerBalance(workerId: string) {
-      await db.doc(`workers/${workerId}`).update({
+      await db.collection("workers").doc(workerId).update({
         currentBalance: FieldValue.increment(delta)
       });
-      logger.log(
-        `Applied TX ${event.params.txId}: ${delta} → worker ${workerId}`
-      );
+      logger.log(`Applied TX ${event.params.txId}: ${delta} → worker ${workerId}`);
     }
 
     // 3) Branch on transactionFunction
     switch (transactionFunction) {
       case "single": {
-        if (
-          !Array.isArray(originalWorkerIds) ||
-          originalWorkerIds.length === 0
-        ) {
-          logger.error(
-            `[single] Missing workerIds on TX ${event.params.txId}`
-          );
+        if (originalWorkerIds.length === 0) {
+          logger.error(`[single] Missing workerIds on TX ${event.params.txId}`);
           return;
         }
-        const singleWorkerId = originalWorkerIds[0];
-        await updateWorkerBalance(singleWorkerId);
+        await updateWorkerBalance(originalWorkerIds[0]);
         break;
       }
-
       case "bulk": {
-        if (
-          !Array.isArray(originalWorkerIds) ||
-          originalWorkerIds.length === 0
-        ) {
-          logger.error(
-            `[bulk] workerIds missing or empty on TX ${event.params.txId}`
-          );
+        if (originalWorkerIds.length === 0) {
+          logger.error(`[bulk] workerIds missing on TX ${event.params.txId}`);
           return;
         }
-        for (const id of originalWorkerIds) {
-          await updateWorkerBalance(id);
+        for (const wid of originalWorkerIds) {
+          await updateWorkerBalance(wid);
         }
         break;
       }
-
       case "payment-group": {
-        if (
-          !Array.isArray(paymentGroupIds) ||
-          paymentGroupIds.length === 0
-        ) {
+        if (paymentGroupIds.length === 0) {
           logger.error(
-            `[payment-group] paymentGroupIds missing or empty on TX ${event.params.txId}`
+            `[payment-group] paymentGroupIds missing on TX ${event.params.txId}`
           );
           return;
         }
-
-        // 3a) Fetch all worker IDs from each payment-group
+        // 3a) fetch all member worker IDs
         const workerIdSet = new Set<string>();
         for (const pgId of paymentGroupIds) {
-          const pgSnap = await db.doc(`paymentGroups/${pgId}`).get();
+          const pgSnap = await db.collection("paymentGroups").doc(pgId).get();
           if (!pgSnap.exists) {
             logger.warn(`[payment-group] Group ${pgId} not found`);
             continue;
           }
-          const pgData = pgSnap.data() as { workerIds: string[] };
-          if (Array.isArray(pgData.workerIds)) {
-            pgData.workerIds.forEach((wid) => workerIdSet.add(wid));
-          }
+          const pgData = pgSnap.data() as { workerIds?: string[] };
+          (pgData.workerIds || []).forEach((wid) => workerIdSet.add(wid));
         }
         const allWorkerIds = Array.from(workerIdSet);
-        if (allWorkerIds.length === 0) {
-          logger.warn(
-            `[payment-group] No worker IDs found in groups on TX ${event.params.txId}`
-          );
-        }
-
-        // 3b) Update the transaction document’s workerIds field
         await snap.ref.update({ workerIds: allWorkerIds });
-
-        // 3c) Update each worker’s balance
-        for (const workerId of allWorkerIds) {
-          await updateWorkerBalance(workerId);
+        // 3b) update each balance
+        for (const wid of allWorkerIds) {
+          await updateWorkerBalance(wid);
         }
         break;
       }
-
-      default: {
+      default:
         logger.warn(
-          `Unknown function "${transactionFunction}" on TX ${event.params.txId}`
+          `Unknown transactionFunction "${transactionFunction}" on TX ${event.params.txId}`
         );
         return;
-      }
     }
   }
 );

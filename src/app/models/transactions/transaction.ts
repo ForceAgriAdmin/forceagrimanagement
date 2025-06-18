@@ -13,4 +13,5 @@ export interface TransactionModel {
     operationIds: string[];
     workerIds: string[];
     paymentGroupIds: string[];
+    isSettleTransaction: boolean;
   }

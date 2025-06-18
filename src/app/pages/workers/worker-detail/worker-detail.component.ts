@@ -275,6 +275,7 @@ export class WorkerDetailComponent implements OnInit {
       transactionTypeId: 'H0Q9PHwKPL35QhFBZTZ7',
       creatorId: this.loggedInUser.uid,
       farmId: this.loggedInUser.farmId,
+      isSettleTransaction: true,
       function: 'single',
     };
 
@@ -291,11 +292,13 @@ export class WorkerDetailComponent implements OnInit {
       .createTransaction(tx)
       .then(() => {
         worker.isActive = false;
-        worker.currentBalance = 0;
         this.ws
           .updateWorker(worker)
           .then(() => {
-            this.notify.showSuccess('Worker Settled Successfully');
+            this.ws.cancelAllWorkerCards(worker.id).then(()=>{
+              this.notify.showSuccess('Worker Settled Successfully');
+            });
+           
           })
           .catch(() => {
             this.notify.showError('Unable to settle worker!!!');
@@ -310,13 +313,26 @@ export class WorkerDetailComponent implements OnInit {
 
     switch (type) {
       case 'Settle':
-        event.icon = 'check_circle';
+        event.icon = 'settle';
         break;
-    
+     case 'Change':
+        event.icon = 'change';
+        break;
+      case 'Create':
+        event.icon = 'created';
+        break;
       default:
         break;
     }
 
-    this.ws.createWorkerTimelineEvent(event);
+    this.ws.createWorkerTimelineEvent(event)
+    .subscribe({
+      next: created => {
+        console.log('Timeline event created:', created);
+      },
+      error: err => {
+        console.error('Failed to create timeline event', err);
+      }
+    });
   }
 }

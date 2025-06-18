@@ -142,6 +142,7 @@ export class AddTransactionComponent implements OnInit {
       transactionTypeId: this.transactionForm.value.transactionTypeId,
       creatorId: this.loggedInUser.uid,
       farmId: this.loggedInUser.farmId,
+      isSettleTransaction: false,
       function: fn,
     };
 

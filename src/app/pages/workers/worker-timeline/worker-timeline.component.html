@@ -1,22 +1,32 @@
-<!-- <mat-card>
-    <mat-card-title>Timeline</mat-card-title>
-    <mat-list>
-      <mat-list-item *ngFor="let ev of events">
-        <mat-icon matListIcon>{{ ev.icon }}</mat-icon>
-        <div matLine>{{ ev.actionDate | date:'short' }}</div>
-        <div matLine>{{ ev.description }}</div>
-      </mat-list-item>
-    </mat-list>
-  </mat-card>
-   -->
 <mat-card>
   <mat-card-header>
     <mat-card-title>Timeline</mat-card-title>
   </mat-card-header>
-  <ejs-timeline>
-    <e-items>
-        <e-item *ngFor="let event of events" [content]="event.title" [oppositeContent]="event.description"> </e-item>
-    </e-items>
-  </ejs-timeline>
-</mat-card>
 
+<div class="container" style="height: 330px; margin-top: 30px;">
+  <ejs-timeline orientation="Vertical" [align]="Before">
+    <e-items>
+      <e-item
+        *ngFor="let ev of events; let i = index"
+        [content]="contentTemplate"
+        [dotCss]="getDotCss(ev.icon)">
+      </e-item>
+    </e-items>
+    <ng-template #contentTemplate let-data>
+      <div class="content-container">
+        <div class="title">
+          {{ events[data.itemIndex].title }}
+        </div>
+        <span class="description">
+          {{ events[data.itemIndex].description }}
+        </span>
+        <div class="info">
+          {{ formatDate(events[data.itemIndex].actionDate) }}
+        </div>
+      </div>
+    </ng-template>
+  </ejs-timeline>
+</div>
+
+
+</mat-card>

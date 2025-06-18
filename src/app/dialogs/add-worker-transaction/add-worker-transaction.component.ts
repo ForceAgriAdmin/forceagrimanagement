@@ -56,7 +56,8 @@ export class AddWorkerTransactionComponent {
     function: 'single',
     operationIds: [], 
     workerIds: [] ,         
-    paymentGroupIds: []          
+    paymentGroupIds: [],
+    isSettleTransaction: false
   };
   user$: Observable<any>;
   

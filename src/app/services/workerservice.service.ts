@@ -14,7 +14,8 @@ import {
   where,
   getDoc,
   Timestamp,
-  orderBy
+  orderBy,
+  writeBatch
 } from '@angular/fire/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from '@angular/fire/storage';
 import { catchError, forkJoin, from, map, Observable, of, tap, throwError } from 'rxjs';
@@ -128,6 +129,19 @@ export class WorkersService {
       });
     });
   }
+
+  public async cancelAllWorkerCards(workerId: string): Promise<void> {
+  const cardsCol = collection(this.firestore, 'cards');
+  const q = query(cardsCol, where('workerId', '==', workerId));
+  const snapshots = await getDocs(q);
+
+  const batch = writeBatch(this.firestore);
+  snapshots.docs.forEach(ds => {
+    const cardRef = doc(this.firestore, 'cards', ds.id);
+    batch.update(cardRef, { active: false });
+  });
+  await batch.commit();
+}
 
   /** Deactivate all cards for this worker, then create a new one */
   private async issueCard(workerId: string): Promise<void> {
