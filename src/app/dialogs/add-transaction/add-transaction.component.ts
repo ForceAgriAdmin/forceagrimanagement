@@ -93,9 +93,12 @@ export class AddTransactionComponent implements OnInit {
     });
 
     // load dropdown data
-    this.transactionService
-      .getTransactionTypes()
-      .subscribe((types) => (this.transactionTypes = types));
+    this.transactionService.getTransactionTypes().subscribe((types) => {
+      this.transactionTypes = types;
+      this.transactionTypes = this.transactionTypes.filter(
+        (tt) => tt.name.toLowerCase() !== 'settle'
+      );
+    });
 
     this.workersService.getWorkers().subscribe((ws) => (this.workers = ws));
 
@@ -134,7 +137,7 @@ export class AddTransactionComponent implements OnInit {
 
     const baseTx: Omit<
       TransactionModel,
-      'id'| 'workerIds' | 'workerTypesIds' | 'paymentGroupIds' | 'operationIds'
+      'id' | 'workerIds' | 'workerTypesIds' | 'paymentGroupIds' | 'operationIds'
     > = {
       timestamp: Timestamp.now(),
       amount: this.transactionForm.value.amount,

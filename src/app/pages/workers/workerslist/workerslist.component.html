@@ -6,10 +6,28 @@
   <mat-spinner></mat-spinner>
 </div>
 <div class="search-toolbar">
-  <app-force-search label="Search" placeholder="Enter name or operation" (searchChange)="filterWorkers($event)"
-    (cancel)="clearSearch()"></app-force-search>
+  <app-force-search
+    label="Search"
+    placeholder="Enter name or operation"
+    (searchChange)="filterWorkers($event)"
+    (cancel)="clearSearch()"
+  ></app-force-search>
 
-  <app-force-button label="Add Worker" icon="add" (action)="onAddNewWorker()"></app-force-button>
+  <app-force-button
+    label="Add Worker"
+    icon="add"
+    (action)="onAddNewWorker()"
+  ></app-force-button>
+
+ <span class="flex-spacer"></span>
+
+  <mat-slide-toggle
+    class="hide-toggle"
+    [(ngModel)]="showInactive"
+    (change)="filterWorkers(searchTerm)"
+  >
+    {{ showInactive ? 'Hide Inactive' : 'Show Inactive' }}
+  </mat-slide-toggle>
 </div>
 
 <div class="workers-list">

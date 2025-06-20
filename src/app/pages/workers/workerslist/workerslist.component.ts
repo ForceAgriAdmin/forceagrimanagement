@@ -30,6 +30,7 @@ import { AppUser } from '../../../models/users/user.model';
 import { Timestamp } from '@angular/fire/firestore';
 import { ConfirmDeleteComponent } from '../../../dialogs/confirm-delete/confirm-delete.component';
 import { HasRoleDirective } from '../../../directives/has-role.directive';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 @Component({
   selector: 'app-workerslist',
@@ -40,6 +41,7 @@ import { HasRoleDirective } from '../../../directives/has-role.directive';
     MatCardModule,
     MatIconModule,
     MatFormFieldModule,
+    MatSlideToggleModule,
     MatInputModule,
     MatProgressSpinnerModule,
     ForceButtonComponent,
@@ -54,6 +56,7 @@ export class WorkerslistComponent implements OnInit{
   workers: WorkerModel[] = [];
   filteredWorkers: WorkerModel[] = [];
   searchTerm: string = '';
+  showInactive = true; 
   operationMap: { [id: string]: string } = {};
   user$: Observable<any>;
   
@@ -100,23 +103,27 @@ export class WorkerslistComponent implements OnInit{
   }
 
   filterWorkers(searchTerm: string): void {
-    if (!searchTerm || searchTerm.trim() === '') {
-      this.filteredWorkers = this.workers;
-      return;
-    }
-    const term = searchTerm.toLowerCase();
-    this.filteredWorkers = this.workers.filter((worker) => {
-      const firstName = worker.firstName.toLowerCase();
-      const lastName = worker.lastName.toLowerCase();
-      const operation = this.getOperationName(worker.operationId).toLowerCase();
-      return (
-        firstName.includes(term) ||
-        lastName.includes(term) ||
-        operation.includes(term)
-      );
-    });
-  }
+  this.searchTerm = searchTerm || '';
+  const term = this.searchTerm.toLowerCase();
 
+  this.filteredWorkers = this.workers.filter(worker => {
+    // 1) hide inactive if toggle off
+    if (!this.showInactive && !worker.isActive) {
+      return false;
+    }
+
+    // 2) if no search term, include (we’ve already handled inactive)
+    if (!term) {
+      return true;
+    }
+
+    // 3) otherwise match name or operation
+    const first = worker.firstName.toLowerCase();
+    const last = worker.lastName.toLowerCase();
+    const op = this.getOperationName(worker.operationId).toLowerCase();
+    return first.includes(term) || last.includes(term) || op.includes(term);
+  });
+}
   clearSearch() {
     this.searchTerm = '';
     this.filteredWorkers = this.workers;

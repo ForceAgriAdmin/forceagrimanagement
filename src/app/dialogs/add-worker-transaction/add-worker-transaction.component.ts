@@ -105,7 +105,12 @@ export class AddWorkerTransactionComponent {
     }
 
     this.transactionService.getTransactionTypes()
-      .subscribe(types => (this.transactionTypes = types));
+      .subscribe(types =>{
+        this.transactionTypes = types;
+         this.transactionTypes = this.transactionTypes.filter(
+        (tt) => tt.name.toLowerCase() !== 'settle'
+      );
+      });
   }
 
   onSubmit(): void {
