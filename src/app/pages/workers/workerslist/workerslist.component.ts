@@ -31,6 +31,7 @@ import { Timestamp } from '@angular/fire/firestore';
 import { ConfirmDeleteComponent } from '../../../dialogs/confirm-delete/confirm-delete.component';
 import { HasRoleDirective } from '../../../directives/has-role.directive';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { TransactionsService } from '../../../services/transactions.service';
 
 @Component({
   selector: 'app-workerslist',
@@ -70,6 +71,7 @@ export class WorkerslistComponent implements OnInit{
       };
   constructor(
       private workersService: WorkersService,
+      private transactionService: TransactionsService,
       private operationService: OperationService,
       private dialog: MatDialog,
       private router: Router,

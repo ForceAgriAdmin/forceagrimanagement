@@ -14,7 +14,10 @@ import {
   addDoc,
   query,
   where,
-  orderBy
+  orderBy,
+  getDocs,
+  getFirestore,
+  writeBatch
 } from '@angular/fire/firestore';
 import { firstValueFrom, from, Observable } from 'rxjs';
 import { TransactionModel } from '../models/transactions/transaction';
@@ -280,6 +283,10 @@ getTransactionTypeById(
       TransactionTypeModel & { id: string }
     >;
   }
+
+
+  
+  
   async PrintTransactionSlip(tx: TransactionModel & { id: string }): Promise<void> {
 
     const worker = await firstValueFrom(
@@ -460,4 +467,31 @@ body {
       
     }, 300);
   }
+
+ async deleteTransactionsForWorker(
+  targetId: string,
+  db: Firestore = getFirestore()
+): Promise<void> {
+  const txCollection = collection(db, 'transactions');
+
+  // Query 1: legacy single-worker field
+  const q1 = query(txCollection, where('workerId', '==', targetId));
+
+  // Query 2: new multi-worker array field
+  const q2 = query(txCollection, where('workerIds', 'array-contains', targetId));
+
+  // Fire both queries in parallel
+  const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
+
+  // Start a batch delete
+  const batch = writeBatch(db);
+
+  // Add all matching docs to the batch
+  for (const docSnap of [...snap1.docs, ...snap2.docs]) {
+    batch.delete(docSnap.ref);
+  }
+
+  // Commit the batch (max ~500 operations per batch)
+  await batch.commit();
+}
 }
