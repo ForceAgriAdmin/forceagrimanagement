@@ -290,12 +290,25 @@ getTransactionTypeById(
       this.getTransactionTypeById(tx.transactionTypeId)
     ) as TransactionTypeModel;
     
-    let afterBalance = worker.currentBalance;
-    let delta = tx.amount;
+    let beforeBalance  = worker.currentBalance;
+    let afterBalance = 0;
+    let transactionAmount = 0.0;
+    var isNegative = false;
+
     if (typeRec.isCredit) {
-      delta = tx.amount;
+      afterBalance = beforeBalance - tx.amount;
+      transactionAmount -= tx.amount;
+      isNegative = true;
     }
-    const beforeBalance = afterBalance - delta;
+    else 
+    {
+      afterBalance = beforeBalance + tx.amount;
+      transactionAmount += tx.amount;
+    }
+    
+    
+    const displayAmount = isNegative ? `N$ -${Math.abs(transactionAmount).toFixed(2)}` : `N$ ${Math.abs(transactionAmount).toFixed(2)}`;
+    
 
     const receiptHtml = `
       <!DOCTYPE html>
@@ -408,7 +421,7 @@ body {
           </div>
           <div class="field-row">
             <span class="label">Amount:</span>
-            <span class="value">${tx.amount < 0 ? "-" : ""}N$${Math.abs(tx.amount).toFixed(2)}</span>
+            <span class="value">${displayAmount}</span>
           </div>
           <div class="field-row">
             <span class="label">Date:</span>
