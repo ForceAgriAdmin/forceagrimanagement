@@ -287,11 +287,11 @@ getTransactionTypeById(
 
   
   
-  async PrintTransactionSlip(tx: TransactionModel & { id: string }): Promise<void> {
+  async PrintTransactionSlip(tx: TransactionModel,worker: WorkerModel): Promise<void> {
 
-    const worker = await firstValueFrom(
-      this.workerService.getWorker(tx.workerIds[0])
-    ) as WorkerModel;
+    // const worker = await firstValueFrom(
+    //   this.workerService.getWorker(tx.workerIds[0])
+    // ) as WorkerModel;
 
     const typeRec = await firstValueFrom(
       this.getTransactionTypeById(tx.transactionTypeId)
@@ -299,22 +299,21 @@ getTransactionTypeById(
     
     
 
-    let beforeBalance  = 0;
+    let beforeBalance  = worker.currentBalance;
     let afterBalance = 0;
     let transactionAmount = 0.0;
     var isNegative = false;
 
 
 
+
     if (typeRec.isCredit) {
-      beforeBalance = worker.currentBalance + tx.amount;
       afterBalance = beforeBalance - tx.amount;
       transactionAmount -= tx.amount;
       isNegative = true;
     }
     else 
     {
-      beforeBalance = worker.currentBalance - tx.amount;
       afterBalance = beforeBalance + tx.amount;
       transactionAmount += tx.amount;
     }

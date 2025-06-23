@@ -125,13 +125,15 @@ export class AddWorkerTransactionComponent {
       this.transaction.operationIds.push(this.worker.operationId)
       this.transaction.workerIds.push(this.worker.id)
 
+      const workerBeforeTransaction = this.worker;
+
       this.transactionService.createTransaction(this.transaction).then(async url => {
         
         const tranTypeName = this.transactionTypes.find(x => x.id === this.transaction.transactionTypeId)?.name;
 
         this.transaction.id = url;
          //if (tranTypeName && tranTypeName.toLowerCase() === 'shop') {
-          await this.transactionService.PrintTransactionSlip(this.transaction);
+          await this.transactionService.PrintTransactionSlip(this.transaction,workerBeforeTransaction);
         //}
         this.dialogRef.close();
       })

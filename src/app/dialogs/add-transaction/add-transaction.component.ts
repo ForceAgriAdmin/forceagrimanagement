@@ -214,6 +214,7 @@ export class AddTransactionComponent implements OnInit {
     }
 
     try {
+      const workerBeforeTransaction = this.worker;
       const newTxId = await this.transactionService.createTransaction(tx);
 
       if (tx.function === 'single') {
@@ -228,7 +229,7 @@ export class AddTransactionComponent implements OnInit {
         );
 
         //if (typeRec.name.toLowerCase() === 'shop') {
-          await this.transactionService.PrintTransactionSlip(createdTx);
+          await this.transactionService.PrintTransactionSlip(createdTx,workerBeforeTransaction);
         //}
       }
 
