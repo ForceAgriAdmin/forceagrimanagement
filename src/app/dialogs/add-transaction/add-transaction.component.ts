@@ -227,9 +227,9 @@ export class AddTransactionComponent implements OnInit {
           )
         );
 
-        if (typeRec.name.toLowerCase() === 'shop') {
+        //if (typeRec.name.toLowerCase() === 'shop') {
           await this.transactionService.PrintTransactionSlip(createdTx);
-        }
+        //}
       }
 
       this.dialogRef.close(true);

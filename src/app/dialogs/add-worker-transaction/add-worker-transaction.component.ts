@@ -130,9 +130,9 @@ export class AddWorkerTransactionComponent {
         const tranTypeName = this.transactionTypes.find(x => x.id === this.transaction.transactionTypeId)?.name;
 
         this.transaction.id = url;
-         if (tranTypeName && tranTypeName.toLowerCase() === 'shop') {
+         //if (tranTypeName && tranTypeName.toLowerCase() === 'shop') {
           await this.transactionService.PrintTransactionSlip(this.transaction);
-        }
+        //}
         this.dialogRef.close();
       })
       .catch(error => {

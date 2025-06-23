@@ -57,7 +57,7 @@ export class WorkerslistComponent implements OnInit{
   workers: WorkerModel[] = [];
   filteredWorkers: WorkerModel[] = [];
   searchTerm: string = '';
-  showInactive = true; 
+  showInactive = false; 
   operationMap: { [id: string]: string } = {};
   user$: Observable<any>;
   
@@ -101,7 +101,8 @@ export class WorkerslistComponent implements OnInit{
         this.operationMap[op.id] = op.name;
       });
     });
-
+    this.showInactive = false;
+    this.searchTerm = ''; 
   }
 
   filterWorkers(searchTerm: string): void {

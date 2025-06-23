@@ -297,18 +297,24 @@ getTransactionTypeById(
       this.getTransactionTypeById(tx.transactionTypeId)
     ) as TransactionTypeModel;
     
-    let beforeBalance  = worker.currentBalance;
+    
+
+    let beforeBalance  = 0;
     let afterBalance = 0;
     let transactionAmount = 0.0;
     var isNegative = false;
 
+
+
     if (typeRec.isCredit) {
+      beforeBalance = worker.currentBalance + tx.amount;
       afterBalance = beforeBalance - tx.amount;
       transactionAmount -= tx.amount;
       isNegative = true;
     }
     else 
     {
+      beforeBalance = worker.currentBalance - tx.amount;
       afterBalance = beforeBalance + tx.amount;
       transactionAmount += tx.amount;
     }
