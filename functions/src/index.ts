@@ -192,3 +192,35 @@ export const onTransactionCreated = onDocumentCreated(
     }
   }
 );
+
+export const onWorkerAdded = onDocumentCreated('workers/{workerId}', async (event) => {
+  const snap = event.data;
+  if (!snap) {
+    logger.error('No document snapshot found.');
+    return;
+  }
+
+  const workerRef = snap.ref;
+  const counterRef = db.collection('counters').doc('employeeNumberCounter');
+
+  try {
+    await db.runTransaction(async (transaction) => {
+      const counterDoc = await transaction.get(counterRef);
+
+      if (counterDoc.exists) {
+         let current = counterDoc.data()?.current;
+
+         const nextWorkerNumber = current + 1;
+
+          transaction.set(counterRef, { current: nextWorkerNumber });
+
+          transaction.update(workerRef, {
+            employeeNumber: `${nextWorkerNumber}`,
+          });
+      }
+      logger.info(`Assigned worker number successfully.`);
+    });
+  } catch (error) {
+    logger.error('Failed to assign worker number:', error);
+  }
+});

@@ -63,7 +63,6 @@ loggedInUser: AppUser = {
       firstName: ['', Validators.required],
       lastName: ['', Validators.required],
       idNumber: ['', Validators.required],
-      employeeNumber: ['', Validators.required],
       operationId: ['', Validators.required],
       workerTypeId: ['', Validators.required]
     });
@@ -120,7 +119,9 @@ loggedInUser: AppUser = {
               workerTypeId: this.workerForm.value.workerTypeId,
               farmId: this.loggedInUser.farmId,
               currentBalance: 0,
-              profileImageUrl: url
+              employeeNumber: '',
+              profileImageUrl: url,
+              isActive: true
             };
             this.dialogRef.close(workerData);
           })
