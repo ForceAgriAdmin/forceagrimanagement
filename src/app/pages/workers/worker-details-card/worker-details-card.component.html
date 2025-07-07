@@ -1,7 +1,14 @@
 <mat-card *ngIf="worker" class="detail-card">
     <mat-card-header class="identity-header">
       <mat-card-title>Worker Details</mat-card-title>
-       <span class="status-badge" [ngClass]="getWorkerActiveStatus(worker)">{{ getWorkerActiveStatus(worker) }}</span>
+       <span
+    class="status-badge"
+    [ngClass]="getWorkerActiveStatus()"
+    (click)="toggleStatus()"
+    style="cursor: pointer;"
+  >
+    {{ getWorkerActiveStatus() }}
+  </span>
     </mat-card-header>
   
     <mat-card-content>
