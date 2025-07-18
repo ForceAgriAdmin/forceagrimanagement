@@ -11,7 +11,7 @@
     (cancel)="onClear()"
   ></app-force-search>
 
-  <app-force-button
+  <app-force-button *appHasRole="['SuperAdmin']"
     label="Add Report"
     icon="add"
     (action)="onAddEdit()"
@@ -33,14 +33,14 @@
       </mat-card-content>
       <mat-card-actions>
         <button 
-        *appHasRole="['SuperAdmin','Admin']"
+        *appHasRole="['SuperAdmin']"
           mat-icon-button
           (click)="onAddEdit(r); $event.stopPropagation()"
         >
           <mat-icon>edit</mat-icon>
         </button>
         <button
-        *appHasRole="['SuperAdmin','Admin']"
+        *appHasRole="['SuperAdmin']"
           mat-icon-button
           (click)="svc.deleteReport(r.id).subscribe(); $event.stopPropagation()"
         >

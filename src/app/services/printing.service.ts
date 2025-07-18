@@ -3,7 +3,7 @@
 import { Injectable } from '@angular/core';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-
+import autoTable from 'jspdf-autotable';
 import QRCode from 'qrcode';
 import JsBarcode from 'jsbarcode';
 import { WorkersService } from './workerservice.service';
@@ -26,52 +26,94 @@ export class PrintingService {
   // ─────────────────────────────────────────────────────────
   // 1) REPORT GENERATOR
   // ─────────────────────────────────────────────────────────
-  async generatePdf(config: {
-    reportName: string;
-    from: Date;
-    to: Date;
-    logoUrl: string;
-    columns: { label: string; key: string }[];
-    rows: any[];
-    fileName: string;
-  }) {
-    // Create a container DIV to hold the report HTML
-    const container = document.createElement('div');
-    container.style.width = '297mm';
-    container.style.padding = '16px';
-    container.style.background = 'white';
-    container.style.boxSizing = 'border-box';
-    container.style.fontFamily = 'Roboto, sans-serif';
-    container.style.color = '#333';
-    container.innerHTML = this.buildReportHtml(config);
-    document.body.appendChild(container);
+ async generatePdf(config: {
+  reportName: string;
+  from: Date;
+  to: Date;
+  logoUrl: string;
+  columns: { label: string; key: string }[];
+  rows: any[];
+  fileName: string;
+}) {
+  const doc = new jsPDF({
+    orientation: 'landscape',
+    unit: 'mm',
+    format: 'a4',
+  });
 
-    // Render the HTML to a canvas
-    const canvas = await html2canvas(container, {
-      scale: 2,
-      useCORS: true,       // ensure CORS is allowed for remote images
-      allowTaint: true,
-      backgroundColor: 'white'
-    });
+  // Header
+  doc.setFontSize(14);
+  doc.text(config.reportName, 14, 20);
 
-    // Create the PDF (A4 landscape)
-    const pdf = new jsPDF({
-      orientation: 'landscape',
-      unit: 'mm',
-      format: 'a4',
-    });
+  doc.setFontSize(10);
+  doc.text(
+    `From: ${config.from.toLocaleDateString()}    To: ${config.to.toLocaleDateString()}`,
+    14,
+    28
+  );
 
-    // Convert the canvas to PNG and add it to the PDF
-    const imgData = canvas.toDataURL('image/png');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-
-    // Save and clean up
-    pdf.save(`${config.fileName}.pdf`);
-    document.body.removeChild(container);
+  // Load logo (optional)
+  if (config.logoUrl) {
+    try {
+      const img = await this.loadImageAsBase64(config.logoUrl);
+      doc.addImage(img, 'PNG', 260, 10, 30, 20);
+    } catch (err) {
+      console.warn('Logo failed to load:', err);
+    }
   }
 
+  // Prepare table rows
+  const headers = config.columns.map(c => c.label);
+  const data = config.rows.map(row =>
+    config.columns.map(c => row[c.key] ?? '')
+  );
+
+  // Calculate total (assuming last column is the amount)
+  const amountIndex = config.columns.length - 1;
+  const total = config.rows.reduce((sum, r) => {
+    const raw = r[config.columns[amountIndex].key];
+    const num = typeof raw === 'number' ? raw : parseFloat(raw) || 0;
+    return sum + num;
+  }, 0).toFixed(2);
+
+  // Add total row (only works for numeric column at end)
+  const totalRow = Array(config.columns.length).fill('');
+  totalRow[amountIndex - 1] = 'Total';
+  totalRow[amountIndex] = total;
+
+  data.push(totalRow);
+
+  // AutoTable
+  autoTable(doc, {
+    head: [headers],
+    body: data,
+    startY: 35,
+    styles: {
+      fontSize: 9,
+      cellPadding: 2,
+    },
+    headStyles: {
+      fillColor: [220, 220, 220], // grey
+      textColor: [0, 0, 0], // black
+      fontStyle: 'bold',
+    },
+    didDrawPage: (data) => {
+      // Optional: Footer or page number
+    },
+  });
+
+  doc.save(`${config.fileName}.pdf`);
+}
+
+private async loadImageAsBase64(url: string): Promise<string> {
+  const response = await fetch(url);
+  const blob = await response.blob();
+  return await new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.readAsDataURL(blob);
+  });
+}
   // A quick method to capture an element and save as PDF (unused in report).
   generatePdfwww() {
     const elementToPrint = document.getElementById('WorkerIdCard');
