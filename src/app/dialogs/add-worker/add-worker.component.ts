@@ -141,12 +141,21 @@ loggedInUser: AppUser = {
                 profileImageUrl: url,
                 isActive: true
               };
-              this.dialogRef.close(workerData);
+
+              this.workersService.addWorker(workerData).then((w) => { 
+                
+                //this.rekognize.RegisterWorkerFacialRekognition(this.croppedFile,workerData.id)
+              });
+
+
+              this.dialogRef.close(true);
             })
             .catch(error => {
               this.notify.showError('Unable to upload worker profile picture');
               console.error('Image upload failed', error);
             });
+
+            
         }
       },
       error: err => {
@@ -157,6 +166,6 @@ loggedInUser: AppUser = {
 }
 
   onCancel(): void {
-    this.dialogRef.close();
+    this.dialogRef.close(false);
   }
 }
