@@ -118,7 +118,7 @@ export class AddReportComponent implements OnInit {
     if (this.form.invalid) return;
     const v = this.form.value;
 
-    const payload: Omit<AppGenericReport, 'id' | 'createdAt' | 'updatedAt'> = {
+    const payload: Omit<AppGenericReport, 'id' | 'createdAt' | 'updatedAt' | 'isWorkerReport' | 'isOperationReport' | 'isTransactionTypeReport'> = {
       name:         v.name,
       description:  v.description,
       summary:      v.summary

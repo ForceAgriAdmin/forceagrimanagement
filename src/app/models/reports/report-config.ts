@@ -1,14 +1,13 @@
-export interface ReportColumn {
-  label: string;
-}
-
 export interface ReportConfig {
-  reportName: string;
-  from: Date;
-  to: Date;
-  logoUrl: string;
-  columns: ReportColumn[];
+  columns: { label: string }[];
   rows: any[];
   fileName: string;
-  employeeNumber:  string;
+  from: Date;
+  to: Date;
+  employeeNumber?: string;
+  logoUrl?: string;
+  reportName: string;
+  isWorkerReport?: boolean;
+  workerName?: string;
+  operationName?: string;
 }

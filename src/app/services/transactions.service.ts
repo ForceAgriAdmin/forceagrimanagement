@@ -20,7 +20,7 @@ import {
   writeBatch,
   Timestamp,
 } from '@angular/fire/firestore';
-import { firstValueFrom, from, Observable } from 'rxjs';
+import { firstValueFrom, from, map, Observable } from 'rxjs';
 import { TransactionModel } from '../models/transactions/transaction';
 import { TransactionTypeModel } from '../models/transactions/transactiontype';
 import { WorkerModel } from '../models/workers/worker';
@@ -112,6 +112,37 @@ export class TransactionsService {
     );
   }
 
+  getWorkerTransactionsByTypeAndOperationBetweenDates(
+  workerId: string,
+  transactionTypeId: string,
+  operationId: string,
+  start: Date,
+  end: Date
+): Observable<(TransactionModel & { id: string })[]> {
+  const transactionsCol = collection(this.firestore, 'transactions');
+
+  const q = query(
+    transactionsCol,
+    where('workerIds', 'array-contains', workerId),
+    where('transactionTypeId', '==', transactionTypeId),
+    where('timestamp', '>=', Timestamp.fromDate(start)),
+    where('timestamp', '<=', Timestamp.fromDate(end)),
+    orderBy('timestamp', 'asc')
+  );
+
+  return runInInjectionContext(
+    this.injector,
+    () =>
+      collectionData(q, { idField: 'id' }).pipe(
+        map(transactions =>
+          transactions.filter(t =>
+            t['operationIds'].includes(operationId)
+          )
+        )
+      ) as Observable<(TransactionModel & { id: string })[]>
+  );
+}
+
   /** Update an existing transaction type by ID */
   updateTransactionType(
     id: string,
@@ -159,6 +190,33 @@ export class TransactionsService {
         >
     );
   }
+
+  getWorkerTransactionsByTypeAndOperation(
+  workerId: string,
+  transactionTypeId: string,
+  operationId: string
+): Observable<(TransactionModel & { id: string })[]> {
+  const transactionsCol = collection(this.firestore, 'transactions');
+  const q = query(
+    transactionsCol,
+    where('workerIds', 'array-contains', workerId),
+    orderBy('timestamp', 'asc')
+  );
+
+  return runInInjectionContext(
+    this.injector,
+    () =>
+      collectionData(q, { idField: 'id' }).pipe(
+        map((txs) =>
+          txs.filter(
+            (tx) =>
+              tx['transactionTypeId'] === transactionTypeId &&
+              tx['operationIds'].includes(operationId)
+          )
+        )
+      ) as Observable<(TransactionModel & { id: string })[]>
+  );
+}
 
   /**
    * Fetch all transactions whose `transactionTypeId` equals the given `typeId`,

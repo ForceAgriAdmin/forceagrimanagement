@@ -26,14 +26,13 @@ export class PrintingService {
   // ─────────────────────────────────────────────────────────
   // 1) REPORT GENERATOR
   // ─────────────────────────────────────────────────────────
- async generatePdf(config: ReportConfig) {
+async generatePdf(config: ReportConfig) {
   const doc = new jsPDF({
     orientation: 'landscape',
     unit: 'mm',
     format: 'a4',
   });
 
-  // Header
   doc.setFontSize(14);
   doc.text(config.reportName, 14, 20);
 
@@ -44,10 +43,10 @@ export class PrintingService {
     28
   );
 
-  doc.setFontSize(10);
-  doc.text(`Employe Number: ${config.employeeNumber}`, 14, 35);
+  if (config.employeeNumber) {
+    doc.text(`Employee Number: ${config.employeeNumber}`, 14, 35);
+  }
 
-  // Load logo (optional)
   if (config.logoUrl) {
     try {
       const img = await this.loadImageAsBase64(config.logoUrl);
@@ -57,26 +56,21 @@ export class PrintingService {
     }
   }
 
-  // Prepare table rows
   const headers = config.columns.map(c => c.label);
   const data = config.rows.map(row =>
-  config.columns.map(col => row[col.label] ?? '')
-);
+    config.columns.map(col => row[col.label] ?? '')
+  );
 
-  // Calculate total (assuming last column is the amount)
   const amountIndex = config.columns.length - 1;
-const amountKey = config.columns[amountIndex].label;
-const total = config.rows.reduce((sum, r) => sum + (parseFloat(r[amountKey]) || 0), 0).toFixed(2);
+  const amountKey = config.columns[amountIndex].label;
+  const total = config.rows.reduce((sum, r) => sum + (parseFloat(r[amountKey]) || 0), 0).toFixed(2);
 
-
-  // Add total row (only works for numeric column at end)
   const totalRow = Array(config.columns.length).fill('');
   totalRow[amountIndex - 1] = 'Total';
   totalRow[amountIndex] = total;
 
   data.push(totalRow);
 
-  // AutoTable
   autoTable(doc, {
     head: [headers],
     body: data,
@@ -86,12 +80,31 @@ const total = config.rows.reduce((sum, r) => sum + (parseFloat(r[amountKey]) || 
       cellPadding: 2,
     },
     headStyles: {
-      fillColor: [220, 220, 220], // grey
-      textColor: [0, 0, 0], // black
+      fillColor: [220, 220, 220],
+      textColor: [0, 0, 0],
       fontStyle: 'bold',
     },
     didDrawPage: (data) => {
-      // Optional: Footer or page number
+      const pageHeight = doc.internal.pageSize.height;
+      const today = new Date().toLocaleDateString();
+
+      // Footer (always)
+      doc.setFontSize(9);
+      doc.setTextColor(100);
+      doc.text(`Printed by www.forceagri.com on ${today}`, 14, pageHeight - 10);
+
+      // Signature section (only for Worker Transaction report)
+      if (config.isWorkerReport) {
+        doc.setFontSize(10);
+        doc.setTextColor(0);
+
+        const sigY = pageHeight - 30;
+        doc.line(40, sigY, 100, sigY); // Worker
+        doc.text(config.workerName ?? 'Worker Signature', 40, sigY + 6);
+
+        doc.line(140, sigY, 200, sigY); // Operation
+        doc.text(config.operationName ?? 'Operation Signature', 140, sigY + 6);
+      }
     },
   });
 

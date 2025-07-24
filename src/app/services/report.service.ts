@@ -82,7 +82,7 @@ export class ReportsService {
     >;
   }
 
-  createGenericReport(r: Omit<AppGenericReport, 'id' | 'createdAt' | 'updatedAt'>): Observable<void> {
+  createGenericReport(r: Omit<AppGenericReport, 'id' | 'createdAt' | 'updatedAt'| 'isWorkerReport' | 'isOperationReport' | 'isTransactionTypeReport'>): Observable<void> {
     const colRef = collection(this.firestore, this.colPathGeneric);
     const newRef = doc(colRef);
     return from(

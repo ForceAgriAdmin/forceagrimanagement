@@ -9,4 +9,7 @@ export interface AppGenericReport {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   summary: Boolean;
+  isWorkerReport: Boolean;
+  isOperationReport: Boolean;
+  isTransactionTypeReport: Boolean; 
 }
