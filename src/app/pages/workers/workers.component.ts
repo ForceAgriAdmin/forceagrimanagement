@@ -7,8 +7,8 @@ import { MessageModule } from '@syncfusion/ej2-angular-notifications'
 import { WorkersService } from '../../services/workerservice.service';
 import { MatDialog } from '@angular/material/dialog';
 import { AddWorkerComponent } from '../../dialogs/add-worker/add-worker.component';
-import { NotificationMessage } from '../../models/layout/notificationmessage';
 import { NotificationService } from '../../services/notification.service';
+import { FacialRekognitionService } from '../../services/facial-rekognition.service';
 @Component({
   selector: 'app-workers',
   imports: [ 
@@ -32,7 +32,8 @@ export class WorkersComponent {
   constructor(
     private workersService: WorkersService,
       private dialog: MatDialog,
-      private notify: NotificationService
+      private notify: NotificationService,
+      private rekognize: FacialRekognitionService
   ){}
   onActivate(child: any): void {
     this.childActive = true;
@@ -60,9 +61,8 @@ export class WorkersComponent {
   
       dialogRef.afterClosed().subscribe(result => {
         if (result) {
-           this.workersService.addWorker(result).then(() => { 
-             this.notify.showSuccess('Worker Added Successfully');
-          });
+          this.notify.showSuccess('Worker Added Successfully');
+           
         }
       });
     }

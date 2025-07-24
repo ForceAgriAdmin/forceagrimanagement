@@ -16,6 +16,7 @@ import { AppUser } from '../../models/users/user.model';
 import { Timestamp } from '@angular/fire/firestore';
 import { WorkerTypeModel } from '../../models/workers/worker-type';
 import { NotificationService } from '../../services/notification.service';
+import { FacialRekognitionService } from '../../services/facial-rekognition.service';
 
 @Component({
   selector: 'app-add-worker',
@@ -56,6 +57,7 @@ loggedInUser: AppUser = {
     private dialog: MatDialog,
      private router: Router,
      private notify: NotificationService,
+     private rekognize: FacialRekognitionService,
     private dialogRef: MatDialogRef<AddWorkerComponent>
   ) {
     // Note: profileImageUrl is not in the form since that comes from file upload.
@@ -108,34 +110,62 @@ loggedInUser: AppUser = {
   });
   }
 
-  onSubmit(): void {
-    if (this.workerForm.valid) {
-      if (this.croppedFile) {
-        this.workersService.uploadProfileImage(this.croppedFile)
-          .then(url => {
-            const workerData = {
-              ...this.workerForm.value,
-              operationId: this.workerForm.value.operationId,
-              workerTypeId: this.workerForm.value.workerTypeId,
-              farmId: this.loggedInUser.farmId,
-              currentBalance: 0,
-              employeeNumber: '',
-              profileImageUrl: url,
-              isActive: true
-            };
-            this.dialogRef.close(workerData);
-          })
-          .catch(error => {
-            console.error('Image upload failed', error);
-            // Optionally notify the user of the failure.
-          });
-      } else {
-        //TODO: Error message
-      }
-    }
+ onSubmit(): void {
+  if (!this.workerForm.valid || !this.croppedFile) {
+    this.notify.showError('Please complete the form and provide a photo');
+    return;
   }
 
+  this.rekognize.PingWorkerFacialRekgnition(this.croppedFile, `${this.croppedFile.name}`)
+    .subscribe({
+      next: res => {
+        if (res.Message === 'Success') {
+          this.notify.showWarning(
+            `This worker may already exist. Detected workerId: ${res.workerId}`
+          );
+          return; // ❌ Don't proceed
+        }
+
+        if (res.Message === 'Failed') {
+          this.notify.showInfo('Worker not recognized. Continuing with registration...');
+
+          this.workersService.uploadProfileImage(this.croppedFile!)
+            .then(url => {
+              const workerData = {
+                ...this.workerForm.value,
+                operationId: this.workerForm.value.operationId,
+                workerTypeId: this.workerForm.value.workerTypeId,
+                farmId: this.loggedInUser.farmId,
+                currentBalance: 0,
+                employeeNumber: '',
+                profileImageUrl: url,
+                isActive: true
+              };
+
+              this.workersService.addWorker(workerData).then((w) => { 
+                
+                //this.rekognize.RegisterWorkerFacialRekognition(this.croppedFile,workerData.id)
+              });
+
+
+              this.dialogRef.close(true);
+            })
+            .catch(error => {
+              this.notify.showError('Unable to upload worker profile picture');
+              console.error('Image upload failed', error);
+            });
+
+            
+        }
+      },
+      error: err => {
+        this.notify.showError('Rekognition failed. Please try again.');
+        console.error('Rekognition error:', err);
+      }
+    });
+}
+
   onCancel(): void {
-    this.dialogRef.close();
+    this.dialogRef.close(false);
   }
 }

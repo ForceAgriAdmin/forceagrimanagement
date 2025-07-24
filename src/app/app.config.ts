@@ -10,11 +10,12 @@ import { TimelineAllModule }    from '@syncfusion/ej2-angular-layouts';
 
 import { environment } from '../environments/environment';
 import { getStorage, provideStorage } from '@angular/fire/storage';
+import { provideHttpClient } from '@angular/common/http';
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideHttpClient(),
     importProvidersFrom(TimelineAllModule, MatDatepickerModule,
       MatNativeDateModule),
-    
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
     provideFirebaseApp(() =>
@@ -24,7 +25,7 @@ export const appConfig: ApplicationConfig = {
     provideFirestore(() => getFirestore()),
     provideStorage(() => getStorage())
   ],
-
+  
   
 };
 
