@@ -18,9 +18,12 @@
   ></app-force-button>
 </div>
 
+<div *ngIf="reports.length < 0">
+  <mat-spinner></mat-spinner>
+</div>
 <!-- Cards grid when data is ready -->
-<div *ngIf="!loading; else busy">
-  <div class="cards">
+
+  <div *ngIf="reports.length > 0" class="cards">
     <mat-card
       class="report-card"
       *ngFor="let r of filtered.data"
@@ -42,18 +45,10 @@
         <button
         *appHasRole="['SuperAdmin']"
           mat-icon-button
-          (click)="svc.deleteReport(r.id).subscribe(); $event.stopPropagation()"
+          (click)="svc.deleteGenericReport(r.id).subscribe(); $event.stopPropagation()"
         >
           <mat-icon>delete</mat-icon>
         </button>
       </mat-card-actions>
     </mat-card>
   </div>
-</div>
-
-<!-- Loading spinner -->
-<ng-template #busy>
-  <div class="spinner">
-    <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
-  </div>
-</ng-template>

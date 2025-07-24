@@ -25,6 +25,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { AppReport }              from '../../models/reports/appreport';
 import { ReportsService }         from '../../services/report.service';
 import { Association }            from '../../models/reports/association';
+import { AppGenericReport } from '../../models/reports/appgenericreport';
 
 // always-include these transaction fields first:
 const BASE_TRANSACTION_FIELDS = [
@@ -98,7 +99,7 @@ export class AddReportComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private dialogRef: MatDialogRef<AddReportComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: AppReport | null,
+    @Inject(MAT_DIALOG_DATA) public data: AppGenericReport | null,
     private svc: ReportsService
   ) {}
 
@@ -106,83 +107,26 @@ export class AddReportComponent implements OnInit {
     this.form = this.fb.group({
       name:         [this.data?.name || '', Validators.required],
       description:  [this.data?.description || ''],
-      associations: [this.data?.associations || [], Validators.required],
-      summary: [this.data?.summary ?? false],
-      fields:       this.fb.array(
-        (this.data?.fields || []).map(f =>
-          this.fb.group({
-            key:   [f.key,   Validators.required],
-            label: [f.label, Validators.required]
-          })
-        )
-      )
+      summary: [this.data?.summary ?? false]
     });
 
-    // seed availableProperties with base + any existing associations
-    this.updateProps(this.form.value.associations);
-
-    // when associations change, recompute & prune
-    this.form.get('associations')!.valueChanges
-      .subscribe((assocs: Association[]) => {
-        this.updateProps(assocs);
-        const valid = this.availableProperties.map(p => p.key);
-        const arr = this.fieldsArray;
-        for (let i = arr.length - 1; i >= 0; i--) {
-          if (!valid.includes(arr.at(i).get('key')!.value)) {
-            arr.removeAt(i);
-          }
-        }
-      });
+    ;
   }
 
-  private updateProps(assocs: Association[]) {
-    // start with the transaction basics
-    const combined = [...BASE_TRANSACTION_FIELDS];
-
-    // then append any association-specific props
-    assocs.forEach(a => {
-      (PROPERTY_MAP[a] || []).forEach(p => {
-        if (!combined.find(x => x.key === p.key)) {
-          combined.push(p);
-        }
-      });
-    });
-
-    this.availableProperties = combined;
-  }
-
-  get fieldsArray(): FormArray {
-    return this.form.get('fields') as FormArray;
-  }
-
-  addField() {
-    this.fieldsArray.push(
-      this.fb.group({
-        key:   ['', Validators.required],
-        label: ['', Validators.required]
-      })
-    );
-  }
-
-  removeField(i: number) {
-    this.fieldsArray.removeAt(i);
-  }
 
   save() {
     if (this.form.invalid) return;
     const v = this.form.value;
 
-    const payload: Omit<AppReport, 'id' | 'createdAt' | 'updatedAt'> = {
+    const payload: Omit<AppGenericReport, 'id' | 'createdAt' | 'updatedAt'> = {
       name:         v.name,
       description:  v.description,
-      associations: v.associations,
-      fields:       v.fields,
       summary:      v.summary
     };
 
     const obs = this.data
-      ? this.svc.updateReport(this.data.id, payload)
-      : this.svc.createReport(payload);
+      ? this.svc.updateGenericReport(this.data.id, payload)
+      : this.svc.createGenericReport(payload);
 
     obs.subscribe(() => this.dialogRef.close(true));
   }

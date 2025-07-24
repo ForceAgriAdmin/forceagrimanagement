@@ -17,7 +17,8 @@ import {
   orderBy,
   getDocs,
   getFirestore,
-  writeBatch
+  writeBatch,
+  Timestamp,
 } from '@angular/fire/firestore';
 import { firstValueFrom, from, Observable } from 'rxjs';
 import { TransactionModel } from '../models/transactions/transaction';
@@ -26,7 +27,7 @@ import { WorkerModel } from '../models/workers/worker';
 import { WorkersService } from './workerservice.service';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class TransactionsService {
   constructor(
@@ -45,11 +46,13 @@ export class TransactionsService {
   }
 
   /** Get a single transaction by its document ID */
-   getTransactionById(
+  getTransactionById(
     id: string
   ): Observable<TransactionModel & { id: string }> {
     const ref = doc(this.firestore, `transactions/${id}`);
-    return docData(ref, { idField: 'id' }) as Observable<TransactionModel & { id: string }>;
+    return docData(ref, { idField: 'id' }) as Observable<
+      TransactionModel & { id: string }
+    >;
   }
 
   /** Get all transactions (no filtering) */
@@ -57,7 +60,10 @@ export class TransactionsService {
     const transactionsCol = collection(this.firestore, 'transactions');
     return runInInjectionContext(
       this.injector,
-      () => collectionData(transactionsCol, { idField: 'id' }) as Observable<(TransactionModel & { id: string })[]>
+      () =>
+        collectionData(transactionsCol, { idField: 'id' }) as Observable<
+          (TransactionModel & { id: string })[]
+        >
     );
   }
 
@@ -83,7 +89,10 @@ export class TransactionsService {
     const typesCol = collection(this.firestore, 'transactionTypes');
     return runInInjectionContext(
       this.injector,
-      () => collectionData(typesCol, { idField: 'id' }) as Observable<(TransactionTypeModel & { id: string })[]>
+      () =>
+        collectionData(typesCol, { idField: 'id' }) as Observable<
+          (TransactionTypeModel & { id: string })[]
+        >
     );
   }
 
@@ -98,7 +107,7 @@ export class TransactionsService {
       setDoc(doc(typesCol), {
         ...data,
         createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       })
     );
   }
@@ -116,7 +125,7 @@ export class TransactionsService {
     return from(
       updateDoc(ref, {
         ...data,
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       })
     );
   }
@@ -144,7 +153,10 @@ export class TransactionsService {
     );
     return runInInjectionContext(
       this.injector,
-      () => collectionData(q, { idField: 'id' }) as Observable<(TransactionModel & { id: string })[]>
+      () =>
+        collectionData(q, { idField: 'id' }) as Observable<
+          (TransactionModel & { id: string })[]
+        >
     );
   }
 
@@ -163,10 +175,14 @@ export class TransactionsService {
     );
     return runInInjectionContext(
       this.injector,
-      () => collectionData(q, { idField: 'id' }) as Observable<(TransactionModel & { id: string })[]>
+      () =>
+        collectionData(q, { idField: 'id' }) as Observable<
+          (TransactionModel & { id: string })[]
+        >
     );
   }
 
+  
   /**
    * Fetch all transactions whose `operationIds` array contains the given `operationId`,
    * ordered by `timestamp` descending.
@@ -182,7 +198,10 @@ export class TransactionsService {
     );
     return runInInjectionContext(
       this.injector,
-      () => collectionData(q, { idField: 'id' }) as Observable<(TransactionModel & { id: string })[]>
+      () =>
+        collectionData(q, { idField: 'id' }) as Observable<
+          (TransactionModel & { id: string })[]
+        >
     );
   }
 
@@ -203,7 +222,10 @@ export class TransactionsService {
     );
     return runInInjectionContext(
       this.injector,
-      () => collectionData(q, { idField: 'id' }) as Observable<(TransactionModel & { id: string })[]>
+      () =>
+        collectionData(q, { idField: 'id' }) as Observable<
+          (TransactionModel & { id: string })[]
+        >
     );
   }
 
@@ -226,7 +248,10 @@ export class TransactionsService {
     );
     return runInInjectionContext(
       this.injector,
-      () => collectionData(q, { idField: 'id' }) as Observable<(TransactionModel & { id: string })[]>
+      () =>
+        collectionData(q, { idField: 'id' }) as Observable<
+          (TransactionModel & { id: string })[]
+        >
     );
   }
 
@@ -249,7 +274,10 @@ export class TransactionsService {
     );
     return runInInjectionContext(
       this.injector,
-      () => collectionData(q, { idField: 'id' }) as Observable<(TransactionModel & { id: string })[]>
+      () =>
+        collectionData(q, { idField: 'id' }) as Observable<
+          (TransactionModel & { id: string })[]
+        >
     );
   }
 
@@ -272,10 +300,37 @@ export class TransactionsService {
     );
     return runInInjectionContext(
       this.injector,
-      () => collectionData(q, { idField: 'id' }) as Observable<(TransactionModel & { id: string })[]>
+      () =>
+        collectionData(q, { idField: 'id' }) as Observable<
+          (TransactionModel & { id: string })[]
+        >
     );
   }
-getTransactionTypeById(
+  getTransactionsBetweenDatesForTransactionTypeIdAndOperation(
+    typeId: string,
+    operationId: string,
+    start: Date,
+    end: Date
+  ): Observable<(TransactionModel & { id: string })[]> {
+    const transactionsCol = collection(this.firestore, 'transactions');
+    const q = query(
+      transactionsCol,
+      where('transactionTypeId', '==', typeId),
+      where('operationIds', 'array-contains', operationId),
+      where('timestamp', '>=', Timestamp.fromDate(start)),
+      where('timestamp', '<=', Timestamp.fromDate(end)),
+      
+      orderBy('timestamp', 'asc')
+    );
+    return runInInjectionContext(
+      this.injector,
+      () =>
+        collectionData(q, { idField: 'id' }) as Observable<
+          (TransactionModel & { id: string })[]
+        >
+    );
+  }
+  getTransactionTypeById(
     typeId: string
   ): Observable<TransactionTypeModel & { id: string }> {
     const ref = doc(this.firestore, `transactionTypes/${typeId}`);
@@ -284,43 +339,35 @@ getTransactionTypeById(
     >;
   }
 
-
-  
-  
-  async PrintTransactionSlip(tx: TransactionModel,worker: WorkerModel): Promise<void> {
-
+  async PrintTransactionSlip(
+    tx: TransactionModel,
+    worker: WorkerModel
+  ): Promise<void> {
     // const worker = await firstValueFrom(
     //   this.workerService.getWorker(tx.workerIds[0])
     // ) as WorkerModel;
 
-    const typeRec = await firstValueFrom(
+    const typeRec = (await firstValueFrom(
       this.getTransactionTypeById(tx.transactionTypeId)
-    ) as TransactionTypeModel;
-    
-    
+    )) as TransactionTypeModel;
 
-    let beforeBalance  = worker.currentBalance;
+    let beforeBalance = worker.currentBalance;
     let afterBalance = 0;
     let transactionAmount = 0.0;
     var isNegative = false;
-
-
-
 
     if (typeRec.isCredit) {
       afterBalance = beforeBalance - tx.amount;
       transactionAmount -= tx.amount;
       isNegative = true;
-    }
-    else 
-    {
+    } else {
       afterBalance = beforeBalance + tx.amount;
       transactionAmount += tx.amount;
     }
-    
-    
-    const displayAmount = isNegative ? `N$ -${Math.abs(transactionAmount).toFixed(2)}` : `N$ ${Math.abs(transactionAmount).toFixed(2)}`;
-    
+
+    const displayAmount = isNegative
+      ? `N$ -${Math.abs(transactionAmount).toFixed(2)}`
+      : `N$ ${Math.abs(transactionAmount).toFixed(2)}`;
 
     const receiptHtml = `
       <!DOCTYPE html>
@@ -437,14 +484,18 @@ body {
           </div>
           <div class="field-row">
             <span class="label">Date:</span>
-            <span class="value">${tx.timestamp.toDate().toLocaleDateString()}</span>
+            <span class="value">${tx.timestamp
+              .toDate()
+              .toLocaleDateString()}</span>
           </div>
           <div class="divider"></div>
 
           <!-- New Balance -->
           <div class="field-row">
             <span class="label"><strong>Current Balance:</strong></span>
-            <span class="value"><strong>N$${afterBalance.toFixed(2)}</strong></span>
+            <span class="value"><strong>N$${afterBalance.toFixed(
+              2
+            )}</strong></span>
           </div>
 
           <div class="divider"></div>
@@ -463,40 +514,41 @@ body {
     }
     printWindow.document.open();
     printWindow.document.write(receiptHtml);
-    
+
     printWindow.document.close();
 
     printWindow.print();
     printWindow.close();
-    setTimeout(() => {
-      
-    }, 300);
+    setTimeout(() => {}, 300);
   }
 
- async deleteTransactionsForWorker(
-  targetId: string,
-  db: Firestore = getFirestore()
-): Promise<void> {
-  const txCollection = collection(db, 'transactions');
+  async deleteTransactionsForWorker(
+    targetId: string,
+    db: Firestore = getFirestore()
+  ): Promise<void> {
+    const txCollection = collection(db, 'transactions');
 
-  // Query 1: legacy single-worker field
-  const q1 = query(txCollection, where('workerId', '==', targetId));
+    // Query 1: legacy single-worker field
+    const q1 = query(txCollection, where('workerId', '==', targetId));
 
-  // Query 2: new multi-worker array field
-  const q2 = query(txCollection, where('workerIds', 'array-contains', targetId));
+    // Query 2: new multi-worker array field
+    const q2 = query(
+      txCollection,
+      where('workerIds', 'array-contains', targetId)
+    );
 
-  // Fire both queries in parallel
-  const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
+    // Fire both queries in parallel
+    const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
 
-  // Start a batch delete
-  const batch = writeBatch(db);
+    // Start a batch delete
+    const batch = writeBatch(db);
 
-  // Add all matching docs to the batch
-  for (const docSnap of [...snap1.docs, ...snap2.docs]) {
-    batch.delete(docSnap.ref);
+    // Add all matching docs to the batch
+    for (const docSnap of [...snap1.docs, ...snap2.docs]) {
+      batch.delete(docSnap.ref);
+    }
+
+    // Commit the batch (max ~500 operations per batch)
+    await batch.commit();
   }
-
-  // Commit the batch (max ~500 operations per batch)
-  await batch.commit();
-}
 }

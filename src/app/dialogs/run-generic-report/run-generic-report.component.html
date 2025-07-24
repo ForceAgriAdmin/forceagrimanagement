@@ -1,0 +1,63 @@
+<h2 mat-dialog-title>Run Report: {{ report.name }}</h2>
+
+<mat-dialog-content class="scroll" [formGroup]="form">
+ <mat-form-field appearance="fill" class="full-width">
+  <mat-label>Workers</mat-label>
+  <mat-select
+    formControlName="workerIds"
+    multiple
+    (selectionChange)="onWorkerSelectionChange($event)"
+  >
+    <!-- ALL option -->
+    <mat-option [value]="'ALL'">ALL</mat-option>
+
+    <!-- Worker list -->
+    <mat-option *ngFor="let worker of workers" [value]="worker.id">
+      {{ `${worker.employeeNumber} ${worker.firstName} ${worker.lastName}` }}
+    </mat-option>
+  </mat-select>
+</mat-form-field>
+
+
+
+
+  
+  <mat-form-field appearance="fill" class="full-width">
+    <mat-label>Operation</mat-label>
+    <mat-select formControlName="operationId">
+      <mat-option *ngFor="let op of operations" [value]="op.id">
+        {{ op.name }}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="fill" class="full-width">
+    <mat-label>Transaction Type</mat-label>
+    <mat-select formControlName="transactionTypeId">
+      <mat-option *ngFor="let type of transactionTypes" [value]="type.id">
+        {{ type.name }}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field appearance="fill" class="full-width">
+    <mat-label>From</mat-label>
+    <input matInput [matDatepicker]="fromPicker" formControlName="from" />
+    <mat-datepicker-toggle matSuffix [for]="fromPicker"></mat-datepicker-toggle>
+    <mat-datepicker #fromPicker></mat-datepicker>
+  </mat-form-field>
+
+  <mat-form-field appearance="fill" class="full-width">
+    <mat-label>To</mat-label>
+    <input matInput [matDatepicker]="toPicker" formControlName="to" />
+    <mat-datepicker-toggle matSuffix [for]="toPicker"></mat-datepicker-toggle>
+    <mat-datepicker #toPicker></mat-datepicker>
+  </mat-form-field>
+
+  <mat-slide-toggle [checked]="isSummaryReport"> Summarize </mat-slide-toggle>
+</mat-dialog-content>
+
+<mat-dialog-actions [align]="end">
+  <button mat-button (click)="exportPDF()">PDF</button>
+  <button mat-button (click)="exportExcel()">Excel</button>
+  <button mat-button (click)="close()">Close</button>
+</mat-dialog-actions>

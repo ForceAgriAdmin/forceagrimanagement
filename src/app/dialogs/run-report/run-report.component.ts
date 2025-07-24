@@ -551,6 +551,7 @@ export class RunReportComponent implements OnInit {
     reportName: this.report.name,
     from,
     to,
+    employeeNumber: '',
     logoUrl,
     columns: cols,
     rows,

@@ -9,6 +9,7 @@ import JsBarcode from 'jsbarcode';
 import { WorkersService } from './workerservice.service';
 import { firstValueFrom } from 'rxjs';
 import jspdf from 'jspdf';
+import { ReportConfig } from '../models/reports/report-config';
 
 export interface CardConfig {
   worker: any;
@@ -16,7 +17,6 @@ export interface CardConfig {
   farm: any;
   identityCard: { number: string };
 }
-
 @Injectable({
   providedIn: 'root',
 })
@@ -26,15 +26,7 @@ export class PrintingService {
   // ─────────────────────────────────────────────────────────
   // 1) REPORT GENERATOR
   // ─────────────────────────────────────────────────────────
- async generatePdf(config: {
-  reportName: string;
-  from: Date;
-  to: Date;
-  logoUrl: string;
-  columns: { label: string; key: string }[];
-  rows: any[];
-  fileName: string;
-}) {
+ async generatePdf(config: ReportConfig) {
   const doc = new jsPDF({
     orientation: 'landscape',
     unit: 'mm',
@@ -52,6 +44,9 @@ export class PrintingService {
     28
   );
 
+  doc.setFontSize(10);
+  doc.text(`Employe Number: ${config.employeeNumber}`, 14, 35);
+
   // Load logo (optional)
   if (config.logoUrl) {
     try {
@@ -65,16 +60,14 @@ export class PrintingService {
   // Prepare table rows
   const headers = config.columns.map(c => c.label);
   const data = config.rows.map(row =>
-    config.columns.map(c => row[c.key] ?? '')
-  );
+  config.columns.map(col => row[col.label] ?? '')
+);
 
   // Calculate total (assuming last column is the amount)
   const amountIndex = config.columns.length - 1;
-  const total = config.rows.reduce((sum, r) => {
-    const raw = r[config.columns[amountIndex].key];
-    const num = typeof raw === 'number' ? raw : parseFloat(raw) || 0;
-    return sum + num;
-  }, 0).toFixed(2);
+const amountKey = config.columns[amountIndex].label;
+const total = config.rows.reduce((sum, r) => sum + (parseFloat(r[amountKey]) || 0), 0).toFixed(2);
+
 
   // Add total row (only works for numeric column at end)
   const totalRow = Array(config.columns.length).fill('');
@@ -87,7 +80,7 @@ export class PrintingService {
   autoTable(doc, {
     head: [headers],
     body: data,
-    startY: 35,
+    startY: 38,
     styles: {
       fontSize: 9,
       cellPadding: 2,

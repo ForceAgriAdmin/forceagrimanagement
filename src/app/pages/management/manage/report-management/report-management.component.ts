@@ -42,6 +42,8 @@ import { AddReportComponent } from '../../../../dialogs/add-report/add-report.co
 import { RunReportComponent } from '../../../../dialogs/run-report/run-report.component';
 import { HasRoleDirective } from '../../../../directives/has-role.directive';
 import { NotificationService } from '../../../../services/notification.service';
+import { AppGenericReport } from '../../../../models/reports/appgenericreport';
+import { RunGenericReportComponent } from '../../../../dialogs/run-generic-report/run-generic-report.component';
 @Component({
   selector: 'app-report-management',
   standalone: true,
@@ -63,9 +65,9 @@ import { NotificationService } from '../../../../services/notification.service';
   styleUrls: ['./report-management.component.scss']
 })
 export class ReportManagementComponent implements OnInit {
-  reports: AppReport[] = [];
-  filtered = new MatTableDataSource<AppReport>([]);
-  loading = true;
+  reports: AppGenericReport[] = [];
+  filtered = new MatTableDataSource<AppGenericReport>([]);
+  loading: boolean | undefined;
 
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
@@ -77,13 +79,14 @@ export class ReportManagementComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.svc.getReports().subscribe(list => {
+    this.loading = true;
+    this.svc.getGenericReports().subscribe(list => {
       this.reports = list;
       this.filtered.data = list;
       this.filtered.sort = this.sort;
       this.filtered.paginator = this.paginator;
-      this.loading = false;
     });
+    this.loading = false;
   }
 
   onSearch(term: string) {
@@ -97,7 +100,7 @@ export class ReportManagementComponent implements OnInit {
     this.filtered.filter = '';
   }
 
-  onAddEdit(r?: AppReport) {
+  onAddEdit(r?: AppGenericReport) {
     const ref = this.dialog.open(AddReportComponent, {
       width: '600px',
       data: r ?? null
@@ -108,8 +111,8 @@ export class ReportManagementComponent implements OnInit {
     });
   }
 
-  onRun(r: AppReport) {
-    this.dialog.open(RunReportComponent, {
+  onRun(r: AppGenericReport) {
+    this.dialog.open(RunGenericReportComponent, {
       width: '800px',
       data: r
     });

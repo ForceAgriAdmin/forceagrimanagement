@@ -177,7 +177,7 @@ export class WorkersService {
  getWorkers(): Observable<WorkerModel[]> {
   return runInInjectionContext(this.injector, () => {
     const colRef = collection(this.firestore, 'workers');
-    const q = query(colRef/*, where('isActive', '==', true)*/);
+    const q = query(colRef, where('isActive', '==', true));
     return collectionData(q, { idField: 'id' }) as Observable<WorkerModel[]>;
   });
 }
