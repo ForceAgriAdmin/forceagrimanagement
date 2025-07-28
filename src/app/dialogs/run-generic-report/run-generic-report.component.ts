@@ -267,27 +267,48 @@ RunTransactionsByType(exportType: string) {
         return;
       }
 
-      const reportRows = summarize
-        ? [{
-            Name: 'All Workers',
-            'Employee Number': '',
+      let reportRows: any[] = [];
+
+      if (summarize) {
+        const groupedByWorker = new Map<string, typeof data>();
+
+        for (const tx of data) {
+          const workerId = tx.workerIds[0];
+          if (!groupedByWorker.has(workerId)) {
+            groupedByWorker.set(workerId, []);
+          }
+          groupedByWorker.get(workerId)?.push(tx);
+        }
+
+        for (const [workerId, transactions] of groupedByWorker.entries()) {
+          const worker = this.workers.find(w => w.id === workerId);
+          const totalAmount = transactions.reduce((sum, t) => sum + (t.amount ?? 0), 0);
+
+          reportRows.push({
+            Name: `${worker?.firstName ?? ''} ${worker?.lastName ?? ''}`,
+            'Employee Number': worker?.employeeNumber ?? '',
             Date: `${fromDate.toLocaleDateString()} - ${toDate.toLocaleDateString()}`,
             Type: typeInfo?.name ?? '',
             Operation: operation?.name ?? '',
-            Amount: data.reduce((sum, t) => sum + (t.amount ?? 0), 0).toFixed(2),
-          }]
-        : data.map((t) => {
-            const worker = this.workers.find((w) => w.id === t.workerIds[0]);
-            const type = this.transactionTypes.find(tt => tt.id === t.transactionTypeId);
-            return {
-              Name: `${worker?.firstName ?? ''} ${worker?.lastName ?? ''}`,
-              'Employee Number': worker?.employeeNumber ?? '',
-              Date: t.timestamp.toDate().toLocaleDateString(),
-              Type: type?.name ?? '',
-              Operation: operation?.name ?? '',
-              Amount: t.amount?.toFixed(2) ?? '0.00',
-            };
+            Amount: totalAmount.toFixed(2),
           });
+        }
+
+        reportRows.sort((a, b) => a.Name.localeCompare(b.Name));
+      } else {
+        reportRows = data.map((t) => {
+          const worker = this.workers.find((w) => w.id === t.workerIds[0]);
+          const type = this.transactionTypes.find(tt => tt.id === t.transactionTypeId);
+          return {
+            Name: `${worker?.firstName ?? ''} ${worker?.lastName ?? ''}`,
+            'Employee Number': worker?.employeeNumber ?? '',
+            Date: t.timestamp.toDate().toLocaleDateString(),
+            Type: type?.name ?? '',
+            Operation: operation?.name ?? '',
+            Amount: t.amount?.toFixed(2) ?? '0.00',
+          };
+        });
+      }
 
       const reportConfig: ReportConfig = {
         columns: [
@@ -301,7 +322,7 @@ RunTransactionsByType(exportType: string) {
         fileName: `${this.report.name}-${operation?.description ?? ''}`,
         from: fromDate,
         to: toDate,
-        employeeNumber: '', // only for Worker report
+        employeeNumber: '',
         logoUrl: operation?.profileImageUrl ?? '',
         reportName: this.report.name,
         rows: reportRows,
@@ -310,7 +331,7 @@ RunTransactionsByType(exportType: string) {
       if (exportType === 'pdf') {
         this.printSvc.generatePdf(reportConfig);
       } else if (exportType === 'excel') {
-        //this.printSvc.generateExcel?.(reportConfig);
+        // this.printSvc.generateExcel?.(reportConfig);
       }
     });
 }
