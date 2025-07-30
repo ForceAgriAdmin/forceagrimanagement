@@ -1,6 +1,15 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { MatDialogRef, MatDialogModule, MatDialog } from '@angular/material/dialog';
+import {
+  FormBuilder,
+  FormGroup,
+  Validators,
+  ReactiveFormsModule,
+} from '@angular/forms';
+import {
+  MatDialogRef,
+  MatDialogModule,
+  MatDialog,
+} from '@angular/material/dialog';
 import { CommonModule } from '@angular/common';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -17,6 +26,7 @@ import { Timestamp } from '@angular/fire/firestore';
 import { WorkerTypeModel } from '../../models/workers/worker-type';
 import { NotificationService } from '../../services/notification.service';
 import { FacialRekognitionService } from '../../services/facial-rekognition.service';
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'app-add-worker',
@@ -29,35 +39,38 @@ import { FacialRekognitionService } from '../../services/facial-rekognition.serv
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    MatButtonModule
+    MatButtonModule,
+    MatIconModule,
   ],
   templateUrl: './add-worker.component.html',
-  styleUrls: ['./add-worker.component.scss']
+  styleUrls: ['./add-worker.component.scss'],
 })
 export class AddWorkerComponent implements OnInit {
   workerForm: FormGroup;
+  detectedWorkerUrl: string = '';
+  detectedWorkerId: string | null = null;
   selectedFile: File | null = null;
   croppedFile: File | null = null;
   operations: OperationModel[] = [];
-  workerTypes: WorkerTypeModel[] =[];
-end: "center"|"start"|"end"|undefined;
-loggedInUser: AppUser = {
-        uid: '',
-        email: '',
-        displayName: '',
-        createdAt: Timestamp.now(),
-        farmId: '',
-        roles: []
-      };
+  workerTypes: WorkerTypeModel[] = [];
+  end: 'center' | 'start' | 'end' | undefined;
+  loggedInUser: AppUser = {
+    uid: '',
+    email: '',
+    displayName: '',
+    createdAt: Timestamp.now(),
+    farmId: '',
+    roles: [],
+  };
   constructor(
     private fb: FormBuilder,
     private operationService: OperationService,
     private workersService: WorkersService,
     private authService: AuthService,
     private dialog: MatDialog,
-     private router: Router,
-     private notify: NotificationService,
-     private rekognize: FacialRekognitionService,
+    private router: Router,
+    private notify: NotificationService,
+    private rekognize: FacialRekognitionService,
     private dialogRef: MatDialogRef<AddWorkerComponent>
   ) {
     // Note: profileImageUrl is not in the form since that comes from file upload.
@@ -66,12 +79,12 @@ loggedInUser: AppUser = {
       lastName: ['', Validators.required],
       idNumber: ['', Validators.required],
       operationId: ['', Validators.required],
-      workerTypeId: ['', Validators.required]
+      workerTypeId: ['', Validators.required],
     });
   }
 
   ngOnInit(): void {
-    this.authService.currentUserDoc$.subscribe(user => {
+    this.authService.currentUserDoc$.subscribe((user) => {
       if (!user) {
         this.router.navigate(['/login']);
       } else {
@@ -81,9 +94,11 @@ loggedInUser: AppUser = {
     this.operationService.getOperations().subscribe((ops: OperationModel[]) => {
       this.operations = ops;
     });
-     this.workersService.getWorkerTypes().subscribe((types: WorkerTypeModel[]) => {
-      this.workerTypes = types;
-    });
+    this.workersService
+      .getWorkerTypes()
+      .subscribe((types: WorkerTypeModel[]) => {
+        this.workerTypes = types;
+      });
   }
 
   onFileSelected(event: Event): void {
@@ -95,41 +110,27 @@ loggedInUser: AppUser = {
     }
   }
 
-  //use selectedfie to Open Cropper 
-  openCropper(f: File ){
-     const dialogRef = this.dialog.open(CropperComponent, {
+  //use selectedfie to Open Cropper
+  openCropper(f: File) {
+    const dialogRef = this.dialog.open(CropperComponent, {
       width: '1600px',
       data: { file: f },
-      disableClose: true
+      disableClose: true,
     });
 
-   dialogRef.afterClosed().subscribe((cf: File | undefined) => {
-    if (cf) {
-      this.croppedFile = cf;
+    dialogRef.afterClosed().subscribe((cf: File | undefined) => {
+      if (cf) {
+        this.croppedFile = cf;
+      }
+    });
+  }
+
+  onSubmit(): void {
+    if (!this.workerForm.valid || !this.croppedFile) {
+      this.notify.showError('Please complete the form and provide a photo');
+      return;
     }
-  });
-  }
-
- onSubmit(): void {
-  if (!this.workerForm.valid || !this.croppedFile) {
-    this.notify.showError('Please complete the form and provide a photo');
-    return;
-  }
-
-  this.rekognize.PingWorkerFacialRekgnition(this.croppedFile, `${this.croppedFile.name}`)
-    .subscribe({
-      next: res => {
-        if (res.Message === 'Success') {
-          this.notify.showWarning(
-            `This worker may already exist. Detected workerId: ${res.workerId}`
-          );
-          return; // ❌ Don't proceed
-        }
-
-        if (res.Message === 'Failed') {
-          this.notify.showInfo('Worker not recognized. Continuing with registration...');
-
-          this.workersService.uploadProfileImage(this.croppedFile!)
+this.workersService.uploadProfileImage(this.croppedFile!)
             .then(url => {
               const workerData = {
                 ...this.workerForm.value,
@@ -155,15 +156,31 @@ loggedInUser: AppUser = {
               console.error('Image upload failed', error);
             });
 
-            
-        }
-      },
-      error: err => {
-        this.notify.showError('Rekognition failed. Please try again.');
-        console.error('Rekognition error:', err);
-      }
-    });
-}
+    // this.rekognize
+    //   .PingWorkerFacialRekgnition(this.croppedFile, `${this.croppedFile.name}`)
+    //   .subscribe({
+    //     next: (res) => {
+    //       if (res.Message === 'Success') {
+    //         this.detectedWorkerId = res.workerId;
+    //         this.detectedWorkerUrl = `workers/list/edit/${res.workerId}`;
+    //         this.notify.showWarning(
+    //           `This worker may already exist. Detected workerId: ${res.workerId}`
+    //         );
+    //         return;
+    //       }
+
+    //       if (res.Message === 'Failed') {
+    //         this.notify.showInfo(
+    //           'Worker not recognized. Continuing with registration...'
+    //         );
+    //       }
+    //     },
+    //     error: (err) => {
+    //       this.notify.showError('Rekognition failed. Please try again.');
+    //       console.error('Rekognition error:', err);
+    //     },
+    //   });
+  }
 
   onCancel(): void {
     this.dialogRef.close(false);

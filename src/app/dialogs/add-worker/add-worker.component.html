@@ -1,5 +1,13 @@
 <h2 mat-dialog-title>Add Worker</h2>
+
 <mat-dialog-content>
+  <div *ngIf="detectedWorkerId" class="in-dialog-warning">
+  <mat-icon color="warn">warning</mat-icon>
+  <span>This worker may already exist. 
+    <a [routerLink]="detectedWorkerUrl" target="_blank">Click here</a> to view profile.
+  </span>
+</div>
+<br/>
   <!-- Wrap form controls inside a form with the workerForm FormGroup -->
   <form [formGroup]="workerForm">
     <div class="dialog-form-row">
@@ -52,6 +60,7 @@
         </div>
     </div>
   </form>
+  
 </mat-dialog-content>
 <mat-dialog-actions [align]="end">
   <button mat-button (click)="onCancel()">Cancel</button>
