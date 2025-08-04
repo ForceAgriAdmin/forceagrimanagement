@@ -32,8 +32,9 @@
         </mat-grid-tile>
         <mat-grid-tile colspan="2">
           <app-transaction-list
-          [workerId]="worker.id"
-        ></app-transaction-list>
+  [workerId]="worker.id"
+  (edit)="onTransactionEdit($event)"
+></app-transaction-list>
         </mat-grid-tile>
         <mat-grid-tile >
         <app-worker-timeline

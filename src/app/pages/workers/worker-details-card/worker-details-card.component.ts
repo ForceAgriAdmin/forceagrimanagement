@@ -1,4 +1,6 @@
-import { Component, Input } from '@angular/core';
+// src/app/pages/worker-details-card/worker-details-card.component.ts
+
+import { Component, Input, OnInit, OnDestroy } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
@@ -10,6 +12,7 @@ import { WorkerModel } from '../../../models/workers/worker';
 import { WorkerTypeModel } from '../../../models/workers/worker-type';
 import { WorkersService } from '../../../services/workerservice.service';
 import { NotificationService } from '../../../services/notification.service';
+import { Subscription } from 'rxjs';
 
 export interface LookupItem {
   id: string | number;
@@ -30,19 +33,32 @@ export interface LookupItem {
   templateUrl: './worker-details-card.component.html',
   styleUrls: ['./worker-details-card.component.scss']
 })
-export class WorkerDetailsCardComponent {
-  @Input() worker!: WorkerModel; 
-  @Input() workerTypes: WorkerTypeModel[] =[]; 
+export class WorkerDetailsCardComponent implements OnInit, OnDestroy {
+  @Input() worker!: WorkerModel;
+  @Input() workerTypes: WorkerTypeModel[] = [];
   @Input() form!: FormGroup;
   @Input() operations: LookupItem[] = [];
   @Input() farms: LookupItem[] = [];
 
- constructor(private workerService: WorkersService, private notify: NotificationService) {}
+  currentBalance: number = 0;
+  private sub?: Subscription;
 
-    getWorkerActiveStatus(): 'Active' | 'In-Active' {
-    return this.worker.isActive ? 'Active' : 'In-Active';
+  constructor(private workerService: WorkersService, private notify: NotificationService) {}
+
+  ngOnInit(): void {
+    this.sub = this.workerService.getWorkerLive(this.worker.id).subscribe((w) => {
+      this.currentBalance = w.currentBalance;
+      this.worker.isActive = w.isActive; // keep isActive updated as well
+    });
   }
 
+  ngOnDestroy(): void {
+    this.sub?.unsubscribe();
+  }
+
+  getWorkerActiveStatus(): 'Active' | 'In-Active' {
+    return this.worker.isActive ? 'Active' : 'In-Active';
+  }
 
   async toggleStatus(): Promise<void> {
     const newStatus = !this.worker.isActive;
@@ -53,13 +69,10 @@ export class WorkerDetailsCardComponent {
         id: this.worker.id,
         isActive: newStatus
       });
-      this.notify.showSuccess('Worker Status updated successfully');
-
+      this.notify.showSuccess('Worker status updated successfully');
     } catch (err) {
-      
       this.notify.showError('Failed to update worker status');
       console.error('Failed to update worker status', err);
-      // Roll back
       this.worker.isActive = !newStatus;
     }
   }

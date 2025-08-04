@@ -8,7 +8,7 @@
       <mat-card *ngFor="let tx of transactions" class="transaction-card">
         <div class="transaction-content">
           <div class="transaction-details">
-            <div class="description">{{ tx.description }}</div>
+            <div class="description">{{ getTypeName(tx.transactionTypeId) }}</div>
             <!-- <div class="operation">{{ tx.operationId }}</div> -->
           </div>
   

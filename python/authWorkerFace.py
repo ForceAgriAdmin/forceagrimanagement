@@ -9,40 +9,45 @@ employeeTable = dynamodb.Table(dynamodbTableName)
 bucketName = 'workerauthbucket'
 
 def lambda_handler(event, context):
-    print(event)
-    objectKey = event['queryStringParameters']['objectKey']
-    image_bytes = s3.get_object(Bucket=bucketName,Key=objectKey)['Body'].read()
-    response = rekognition.search_faces_by_image(
-        CollectionId="workers",
-        Image={'Bytes':image_bytes}
-    )
+    try:
+        print(event)
+        objectKey = event['queryStringParameters']['objectKey']
+        image_bytes = s3.get_object(Bucket=bucketName, Key=objectKey)['Body'].read()
 
-    for match in response['FaceMatches']:
-        print(match['Face']['FaceId'],match['Face']['Confidence'])
-
-        face = employeeTable.get_item(
-            Key = {
-                'rekognitionId': match['Face']['FaceId']
-            }
+        response = rekognition.search_faces_by_image(
+            CollectionId="workers",
+            Image={'Bytes': image_bytes}
         )
-        if 'Item' in face:
-            print('Worker Found: ', face['Item'])
-            return buildResponse(200,{
-                'Message': 'Success',
-                'workerId': face['Item']['workerId']
-            })
-        print('Worker not found')
-        return buildResponse(403,{'Message':'Failed'})
-        
 
-def buildResponse(statusCode, body=None):
-    response = {
+        for match in response.get('FaceMatches', []):
+            face_id = match['Face']['FaceId']
+            confidence = match['Face']['Confidence']
+            print(f"Match: {face_id} @ {confidence}%")
+
+            face = employeeTable.get_item(Key={'rekognitionId': face_id})
+            if 'Item' in face:
+                print('Worker Found:', face['Item'])
+                return build_response(200, {
+                    'Message': 'success',
+                    'workerId': face['Item']['workerId']
+                })
+
+        print('Worker not found')
+        return build_response(404, {'Message': 'no_match'})
+
+    except rekognition.exceptions.InvalidParameterException as e:
+        print('Rekognition error: No face found')
+        return build_response(502, {'Message': 'no_face_detected'})
+    except Exception as e:
+        print('Unhandled error:', str(e))
+        return build_response(502, {'Message': 'error', 'error': str(e)})
+
+def build_response(statusCode, body=None):
+    return {
         'statusCode': statusCode,
         'headers': {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*'
-        }
+        },
+        'body': json.dumps(body or {})
     }
-    if body is not None:
-        response['body'] = json.dumps(body)
-    return response

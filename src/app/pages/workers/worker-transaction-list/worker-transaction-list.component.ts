@@ -15,6 +15,7 @@ import { MatIconModule } from '@angular/material/icon';
 
 import { Subscription } from 'rxjs';
 import { TransactionModel } from '../../../models/transactions/transaction';
+import { TransactionTypeModel } from '../../../models/transactions/transactiontype';
 import { TransactionsService } from '../../../services/transactions.service';
 
 @Component({
@@ -29,27 +30,40 @@ export class TransactionListComponent implements OnChanges, OnDestroy {
   @Output() edit = new EventEmitter<TransactionModel>();
 
   transactions: TransactionModel[] = [];
-  private sub!: Subscription;
+  transactionTypes: TransactionTypeModel[] = [];
 
-  constructor(private transactionService: TransactionsService) {}
+  private sub!: Subscription;
+  private typeSub!: Subscription;
+
+  constructor(
+    private transactionService: TransactionsService,
+  ) {}
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['workerId'] && this.workerId) {
-      // If there's an existing subscription, unsubscribe before re-subscribing
-      if (this.sub) {
-        this.sub.unsubscribe();
-      }
+      if (this.sub) this.sub.unsubscribe();
+      if (this.typeSub) this.typeSub.unsubscribe();
 
-      // Firestore array‐contains query on the new `workerIds` field
       this.sub = this.transactionService
         .getTransactionsByWorkerId(this.workerId)
         .subscribe((t: TransactionModel[]) => {
-          // Sort by timestamp descending, if you like:
           this.transactions = t.sort((a, b) =>
             b.timestamp.toDate().getTime() - a.timestamp.toDate().getTime()
           );
         });
+
+      this.typeSub = this.transactionService
+        .getTransactionTypes()
+        .subscribe((types: TransactionTypeModel[]) => {
+          this.transactionTypes = types;
+        });
     }
+  }
+
+  getTypeName(transactionTypeId: string): string {
+    return (
+      this.transactionTypes.find(t => t.id === transactionTypeId)?.name || '—'
+    );
   }
 
   onEdit(tx: TransactionModel) {
@@ -57,8 +71,7 @@ export class TransactionListComponent implements OnChanges, OnDestroy {
   }
 
   ngOnDestroy() {
-    if (this.sub) {
-      this.sub.unsubscribe();
-    }
+    if (this.sub) this.sub.unsubscribe();
+    if (this.typeSub) this.typeSub.unsubscribe();
   }
 }

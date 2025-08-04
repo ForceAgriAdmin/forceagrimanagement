@@ -49,17 +49,17 @@
       </form>
     </mat-card-content>
     <mat-card-footer style="margin-left: 15px;">
-      <mat-card-title>
-        <h3>
-          Running Balance:
-          <span
-              class="amount"
-              [ngClass]="{ positive: worker.currentBalance >= 0, negative: worker.currentBalance < 0 }"
-            >
-              N{{ worker.currentBalance | currency }}
-        </span>
-        </h3>
-      </mat-card-title>
-    </mat-card-footer>
+  <mat-card-title>
+    <h3>
+      Running Balance:
+      <span
+        class="amount"
+        [ngClass]="{ positive: currentBalance >= 0, negative: currentBalance < 0 }"
+      >
+        N{{ currentBalance | currency }}
+      </span>
+    </h3>
+  </mat-card-title>
+</mat-card-footer>
   </mat-card>
   

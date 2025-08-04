@@ -1,3 +1,5 @@
+// src/app/dialogs/edit-transaction/edit-transaction.component.ts
+
 import { Component, Inject, OnInit } from '@angular/core';
 import {
   FormBuilder,
@@ -6,7 +8,11 @@ import {
   ReactiveFormsModule,
 } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
+import {
+  MatDialogRef,
+  MAT_DIALOG_DATA,
+  MatDialogModule,
+} from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -65,17 +71,26 @@ export class EditTransactionComponent implements OnInit {
   ngOnInit(): void {
     const tx = this.data.transaction;
 
-    this.transactionForm.patchValue({
-      function: tx.function,
-      transactionTypeId: tx.transactionTypeId,
-      workerIds: tx.workerIds,
-      paymentGroupId: tx.paymentGroupIds?.[0] || '',
-      description: tx.description,
-      amount: tx.amount,
-    });
-
     this.transactionService.getTransactionTypes().subscribe((types) => {
       this.transactionTypes = types;
+
+      // Patch after types loaded to convert negative → positive for credits
+      const txType = types.find((t) => t.id === tx.transactionTypeId);
+      const correctedAmount = txType?.isCredit
+        ? Math.abs(tx.amount)
+        : tx.amount;
+
+      this.transactionForm.patchValue({
+        function: tx.function,
+        transactionTypeId: tx.transactionTypeId,
+        workerIds:
+          tx.function === 'single'
+            ? tx.workerIds?.[0] ?? ''
+            : tx.workerIds ?? [],
+        paymentGroupId: tx.paymentGroupIds?.[0] || '',
+        description: tx.description,
+        amount: correctedAmount,
+      });
     });
 
     this.workersService.getWorkers().subscribe((ws) => {
@@ -114,36 +129,42 @@ export class EditTransactionComponent implements OnInit {
   }
 
   async onSubmit(): Promise<void> {
-    if (this.transactionForm.invalid) {
-      return;
-    }
+    if (this.transactionForm.invalid) return;
 
-    const fn = this.transactionForm.value.function;
+    const form = this.transactionForm.value;
+    const fn = form.function;
+    const txType = this.transactionTypes.find(
+      (t) => t.id === form.transactionTypeId
+    );
+    const isCredit = txType?.isCredit ?? false;
 
     const updatedTx: TransactionModel = {
       ...this.data.transaction,
       function: fn,
-      amount: this.transactionForm.value.amount,
-      description: this.transactionForm.value.description,
-      transactionTypeId: this.transactionForm.value.transactionTypeId,
+      amount: isCredit ? -Math.abs(form.amount) : form.amount,
+      description: form.description,
+      transactionTypeId: form.transactionTypeId,
     };
 
     if (fn === 'single') {
-      const id = this.transactionForm.value.workerIds;
-      updatedTx.workerIds = [id];
+      updatedTx.workerIds = [form.workerIds];
       updatedTx.paymentGroupIds = [];
     } else if (fn === 'bulk') {
-      updatedTx.workerIds = this.transactionForm.value.workerIds;
+      updatedTx.workerIds = form.workerIds;
       updatedTx.paymentGroupIds = [];
     } else if (fn === 'payment-group') {
-      const pgId = this.transactionForm.value.paymentGroupId;
-      updatedTx.paymentGroupIds = [pgId];
-      const group = this.paymentGroups.find((g) => g.id === pgId);
+      updatedTx.paymentGroupIds = [form.paymentGroupId];
+      const group = this.paymentGroups.find(
+        (g) => g.id === form.paymentGroupId
+      );
       updatedTx.workerIds = group?.workerIds || [];
     }
 
     try {
-      await this.transactionService.updateTransaction(this.data.transaction.id,updatedTx);
+      await this.transactionService.updateTransaction(
+        this.data.transaction.id,
+        updatedTx
+      );
       this.dialogRef.close(true);
     } catch (err) {
       console.error('Update Transaction failed', err);

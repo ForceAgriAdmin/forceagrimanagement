@@ -54,6 +54,7 @@ import { TransactionsService } from '../../../services/transactions.service';
 import { TransactionModel } from '../../../models/transactions/transaction';
 import { AppUser } from '../../../models/users/user.model';
 import { AuthService } from '../../../services/auth.service';
+import { EditTransactionComponent } from '../../../dialogs/edit-transaction/edit-transaction.component';
 
 export interface Tile {
   color: string;
@@ -169,6 +170,20 @@ export class WorkerDetailComponent implements OnInit {
     });
 
     this.loading = false;
+  }
+
+  onTransactionEdit(tx: TransactionModel) {
+    const ref = this.dialog.open(EditTransactionComponent, {
+      width: '800px',
+      disableClose: true,
+      data: { transaction: tx }
+    });
+
+    ref.afterClosed().subscribe(async (res: boolean) => {
+      if (res) {
+        this.notify.showSuccess('Transaction updated successfully');
+      }
+    });
   }
 
   async onAction(actionId: string) {

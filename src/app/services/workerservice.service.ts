@@ -43,6 +43,10 @@ export class WorkersService {
     private zone: NgZone
   ) {}
 
+  getWorkerLive(workerId: string): Observable<WorkerModel> {
+    const ref = doc(this.firestore, 'workers', workerId);
+    return docData(ref, { idField: 'id' }) as Observable<WorkerModel>;
+  }
   /**
    * Return a cached download URL for 30 minutes.
    * Accepts either a full URL or a storage path.

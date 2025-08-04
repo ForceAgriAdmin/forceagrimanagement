@@ -1,11 +1,161 @@
 import * as admin from "firebase-admin";
-import { onDocumentCreated } from "firebase-functions/v2/firestore";
+import axios from "axios";
+import * as https from "https";
+import { onDocumentCreated,onDocumentUpdated } from "firebase-functions/v2/firestore";
+import * as functions from "firebase-functions/v1";
 import { logger } from "firebase-functions";
 import { FieldValue } from "firebase-admin/firestore";
+import { defineString } from "firebase-functions/params";
 
 admin.initializeApp();
 const db = admin.firestore();
+const rekognitionApiBase = defineString('REKOGNITION_API_BASE');
+const rekognitionAuthBucket = defineString('REKOGNITION_AUTH_BUCKET');
+const rekognitionRegisteredBucket = defineString('REKOGNITION_REGISTERED_BUCKET');
+const httpsAgent = new https.Agent({ rejectUnauthorized: false });
 
+async function uploadToAws(fileBuffer: Buffer, filename: string, bucket: string, mimeType: string): Promise<void> {
+  const uploadUrl = `${rekognitionApiBase.value()}/${bucket}/${filename}`;
+  await axios.put(uploadUrl, fileBuffer, {
+    headers: {
+      'Content-Type': mimeType || 'application/octet-stream',
+    },
+    httpsAgent,
+  });
+}
+
+async function runFacialRecognition(filename: string) {
+  const requestFacialUrl = `${rekognitionApiBase.value()}/worker`;
+  try {
+    const res = await axios.get(requestFacialUrl, {
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      params: { objectKey: filename },
+      httpsAgent,
+    });
+    return res.data;
+  } catch (err: any) {
+    const status = err.response?.status;
+    const message = err.response?.data?.message?.toLowerCase() || '';
+
+    if (status === 403 || (status === 404 && !message)) {
+      return { Message: 'no_match' };
+    }
+
+    if (status === 400 && message.includes('no faces')) {
+      return { Message: 'no_face_detected' };
+    }
+
+    console.error('Unhandled Rekognition error', {
+      status,
+      message,
+      details: err.message,
+    });
+
+    throw new functions.https.HttpsError('internal', 'Rekognition request failed');
+  }
+}
+
+export const pingWorkerFacialRecognition = functions.https.onCall(async (data, context) => {
+  const { fileUrl, filename, mimeType } = data;
+  if (!fileUrl || !filename) {
+    throw new functions.https.HttpsError('invalid-argument', 'fileUrl and filename are required');
+  }
+
+  try {
+    const fileResp = await axios.get(fileUrl, { responseType: 'arraybuffer' });
+    await uploadToAws(Buffer.from(fileResp.data), filename, rekognitionAuthBucket.value(), mimeType);
+    return await runFacialRecognition(filename);
+  } catch (error: any) {
+    console.error('Error in pingWorkerFacialRecognition:', error.message);
+    throw new functions.https.HttpsError('internal', 'Ping failed');
+  }
+});
+
+export const registerWorkerFacialRecognition = functions.https.onCall(async (data, context) => {
+  const { fileUrl, filename, mimeType } = data;
+  if (!fileUrl || !filename) {
+    throw new functions.https.HttpsError('invalid-argument', 'fileUrl and filename are required');
+  }
+
+  try {
+    const fileResp = await axios.get(fileUrl, { responseType: 'arraybuffer' });
+    await uploadToAws(Buffer.from(fileResp.data), filename, rekognitionRegisteredBucket.value(), mimeType);
+    return await runFacialRecognition(filename);
+  } catch (error: any) {
+    console.error('Error in registerWorkerFacialRecognition:', error.message);
+    throw new functions.https.HttpsError('internal', 'Registration failed');
+  }
+});
+export const onTransactionUpdated = onDocumentUpdated(
+  "transactions/{txId}",
+  async (event) => {
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+
+    if (!before || !after) {
+      logger.error("Missing before/after data in transaction update");
+      return;
+    }
+
+    const txId = event.params.txId;
+
+    const changed =
+      before.amount !== after.amount ||
+      before.function !== after.function ||
+      JSON.stringify(before.workerIds) !== JSON.stringify(after.workerIds) ||
+      before.transactionTypeId !== after.transactionTypeId;
+
+    if (!changed) {
+      logger.log(`TX ${txId} updated but not relevant to balance`);
+      return;
+    }
+
+    const [oldTypeSnap, newTypeSnap] = await Promise.all([
+      db.collection("transactionTypes").doc(before.transactionTypeId).get(),
+      db.collection("transactionTypes").doc(after.transactionTypeId).get(),
+    ]);
+
+    if (!oldTypeSnap.exists || !newTypeSnap.exists) {
+      logger.error("Missing transactionType(s) in update handler");
+      return;
+    }
+
+    const oldType = oldTypeSnap.data() as { isCredit: boolean };
+    const newType = newTypeSnap.data() as { isCredit: boolean };
+
+    const oldDelta = (oldType.isCredit ? -1 : 1) * Math.abs(before.amount);
+    const newDelta = (newType.isCredit ? -1 : 1) * Math.abs(after.amount);
+
+    const oldWorkerIds: string[] = before.workerIds || [];
+    const newWorkerIds: string[] = after.workerIds || [];
+
+    const workerUpdates: Record<string, number> = {};
+
+    for (const wid of oldWorkerIds) {
+      workerUpdates[wid] = (workerUpdates[wid] || 0) - oldDelta;
+    }
+
+    for (const wid of newWorkerIds) {
+      workerUpdates[wid] = (workerUpdates[wid] || 0) + newDelta;
+    }
+
+    await Promise.all(
+      Object.entries(workerUpdates).map(async ([wid, delta]) => {
+        await db.collection("workers").doc(wid).update({
+          currentBalance: FieldValue.increment(delta),
+        });
+        logger.log(
+          `TX ${txId}: Adjusted ${wid} by ${delta > 0 ? '+' : ''}${delta}`
+        );
+      })
+    );
+
+    logger.log(`TX ${txId} balance updates completed.`);
+  }
+);
 export const onTransactionCreated = onDocumentCreated(
   "transactions/{txId}",
   async (event) => {
